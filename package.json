@@ -1,0 +1,30 @@
+{
+  "name": "skyrdle",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"node server.js\" \"vite\"",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server": "node server.js",
+    "start": "node server.js",
+    "postinstall": "npm run build"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.3.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^4.19.2",
+    "mongoose": "^8.15.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.26",
+    "@types/react-dom": "^18.0.8",
+    "vite": "^4.0.0",
+    "@vitejs/plugin-react": "^3.0.0",
+    "typescript": "^5.0.0",
+    "concurrently": "^8.0.1"
+  }
+}
