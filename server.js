@@ -199,12 +199,28 @@ app.post('/api/guess', async (req, res) => {
 
     if (game.status !== 'Playing') return res.status(400).json({ error: 'Game is already over (Won or Lost)' });
 
-    // Evaluate guess
-    const evals = guess.toUpperCase().split('').map((ch, i) => {
-      if (ch === game.targetWord[i]) return 'correct';
-      if (game.targetWord.includes(ch)) return 'present';
-      return 'absent';
-    });
+    // Evaluate guess with duplicate handling
+    const guessChars = guess.toUpperCase().split('');
+    const targetChars = game.targetWord.toUpperCase().split('');
+    const evals = Array(guessChars.length).fill(null);
+    // First pass: correct positions
+    for (let i = 0; i < guessChars.length; i++) {
+      if (guessChars[i] === targetChars[i]) {
+        evals[i] = 'correct';
+        targetChars[i] = null;
+      }
+    }
+    // Second pass: present or absent
+    for (let i = 0; i < guessChars.length; i++) {
+      if (evals[i]) continue;
+      const idx = targetChars.indexOf(guessChars[i]);
+      if (idx !== -1) {
+        evals[i] = 'present';
+        targetChars[idx] = null;
+      } else {
+        evals[i] = 'absent';
+      }
+    }
 
     game.guesses.push({ letters: guess.toUpperCase().split(''), evaluation: evals });
 
