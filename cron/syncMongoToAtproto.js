@@ -79,9 +79,9 @@ async function saveScoreToAtproto(did, gameNumber, score, guesses) {
     console.log(`Saving score for ${did}, game ${gameNumber}: ${score}`);
     
     await agent.com.atproto.repo.createRecord({
-      repo: agent.session.did, // Use the server's DID
+      repo: agent.session.did,
       collection: PLAYER_SCORE_COLLECTION,
-      rkey: String(gameNumber), // Match the frontend implementation
+      rkey: recordHash,
       record: {
         playerDid: did,
         gameNumber,
