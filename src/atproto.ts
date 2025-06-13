@@ -117,9 +117,12 @@ export async function getScore(did: string, gameNumber: number): Promise<number 
   }
 }
 
-// Post a skeet (Bluesky post)
+/**
+ * Post results to Bluesky
+ */
 export async function postSkeet(text: string) {
-  if (!agent.session?.did) throw new Error('Not logged in');
+  if (!agent.session?.did) throw new Error('Not logged in')
+
   try {
     await agent.com.atproto.repo.createRecord({
       repo: agent.session.did,
@@ -128,15 +131,17 @@ export async function postSkeet(text: string) {
         $type: 'app.bsky.feed.post',
         text: text,
         createdAt: new Date().toISOString(),
+        langs: ['en']
       },
-    });
+    })
   } catch (e: any) {
     if (e instanceof XRPCError && e.error === 'ExpiredToken') {
-      const sess = agent.session;
-      if (!sess?.refreshJwt) throw e;
-      const res = await agent.api.com.atproto.server.refreshSession({ refreshJwt: sess.refreshJwt });
-      agent.session = { ...agent.session, accessJwt: res.data.accessJwt, refreshJwt: res.data.refreshJwt };
-      localStorage.setItem('skyrdleSession', JSON.stringify(agent.session));
+      const sess = agent.session
+      if (!sess?.refreshJwt) throw e
+      const res = await agent.api.com.atproto.server.refreshSession({ refreshJwt: sess.refreshJwt })
+      agent.session = { ...agent.session, accessJwt: res.data.accessJwt, refreshJwt: res.data.refreshJwt }
+      localStorage.setItem('skyrdleSession', JSON.stringify(agent.session))
+
       // Retry post
       await agent.com.atproto.repo.createRecord({
         repo: agent.session.did,
@@ -145,10 +150,11 @@ export async function postSkeet(text: string) {
           $type: 'app.bsky.feed.post',
           text: text,
           createdAt: new Date().toISOString(),
+          langs: ['en']
         },
-      });
+      })
     } else {
-      throw e;
+      throw e
     }
   }
 }
