@@ -340,8 +340,9 @@ const handleShare = async () => {
           <button onClick={handleLogin} className="btn-glass">Login</button>
         </div>
       ) : (
-        <div className="game">
-          <div className="navigation-buttons" style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', display: 'flex', justifyContent: 'center', gap: '1rem', alignItems: 'center', zIndex: 10 }}>
+        <>
+          <header className="game-header-fixed">
+            <div className="navigation-container">
               <button
                 type="button"
                 onClick={handlePreviousGame}
@@ -351,6 +352,7 @@ const handleShare = async () => {
               >
                 Previous
               </button>
+              <h1 className="game-title">Skyrdle #{viewedGameNumber !== null ? viewedGameNumber : gameNumber}</h1>
               <button
                 type="button"
                 onClick={handleNextGame}
@@ -360,58 +362,56 @@ const handleShare = async () => {
               >
                 Next
               </button>
-          </div>
-
-          <div className="game-header" style={{ textAlign: 'center', marginBottom: '1rem' }}>
-            <h1 className="game-title" style={{ marginBlock: '0.5rem' }}>Skyrdle #{viewedGameNumber !== null ? viewedGameNumber : gameNumber}</h1>
-
-          </div>
-          <div className="board">
-            {guesses.map(({letters, evaluation},gi) => (
-              <div key={gi} className="row">
-                {letters.map((ch,i) => renderCell(ch,i,evaluation))}
+            </div>
+          </header>
+          
+          <div className="game">
+            <div className="board">
+              {guesses.map(({letters, evaluation},gi) => (
+                <div key={gi} className="row">
+                  {letters.map((ch,i) => renderCell(ch,i,evaluation))}
+                </div>
+              ))}
+              {status === GameStatus.Playing && (
+                <div className="row">
+                  {Array.from({ length: WORD_LENGTH }).map((_, i) => renderCell(current[i]||'', i))}
+                </div>
+              )}
+            </div>
+            
+            {/* Mobile keyboard only on mobile */}
+            <div className="mobile-keyboard-container">
+              <MobileKeyboard
+                absentLetters={absentLetters}
+                onKey={handleVirtualKey}
+                onEnter={handleVirtualKeyEnter}
+                onDelete={handleVirtualKeyBackspace}
+              />
+            </div>
+            {status === GameStatus.Won && (
+              <div className="message">
+                Congrats! You won! Score saved!
               </div>
-            ))}
-            {status === GameStatus.Playing && (
-              <div className="row">
-                {Array.from({ length: WORD_LENGTH }).map((_, i) => renderCell(current[i]||'', i))}
+            )}
+            {status === GameStatus.Lost && (
+              <div className="message">
+                Game Over. Score saved.
+              </div>
+            )}
+            {shareText && (
+              <div className="share-results-box" style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #555', borderRadius: '8px', backgroundColor: '#2a2a2e' }}>
+                <h3 style={{ marginTop: 0, marginBottom: '0.5rem', textAlign: 'center' }}>Share Results</h3>
+                <pre style={{ whiteSpace: 'pre-wrap', background: '#1e1e20', padding: '10px', borderRadius: '4px', textAlign: 'left', color: '#eee', border: '1px solid #444' }}>{shareText}</pre>
+                <div className="share-buttons" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-around', gap: '0.5rem' }}>
+                  <button onClick={handleShare} className="btn-glass" style={{ flex: 1 }}>Copy</button>
+                  <button onClick={handleSkeetResults} disabled={isPostingSkeet} className="btn-glass" style={{ flex: 1, opacity: isPostingSkeet ? 0.6 : 1 }}>
+                    {isPostingSkeet ? 'Posting...' : 'Post'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
-          
-          {/* Mobile keyboard only on mobile */}
-          <div className="mobile-keyboard-container">
-            <MobileKeyboard
-              absentLetters={absentLetters}
-              onKey={handleVirtualKey}
-              onEnter={handleVirtualKeyEnter}
-              onDelete={handleVirtualKeyBackspace}
-            />
-          </div>
-          {status === GameStatus.Won && (
-            <div className="message">
-              Congrats! You won! Score saved!
-            </div>
-          )}
-          {status === GameStatus.Lost && (
-            <div className="message">
-              Game Over. Score saved.
-            </div>
-          )}
-          {shareText && (
-            <div className="share-results-box" style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #555', borderRadius: '8px', backgroundColor: '#2a2a2e' }}>
-              <h3 style={{ marginTop: 0, marginBottom: '0.5rem', textAlign: 'center' }}>Share Results</h3>
-              <pre style={{ whiteSpace: 'pre-wrap', background: '#1e1e20', padding: '10px', borderRadius: '4px', textAlign: 'left', color: '#eee', border: '1px solid #444' }}>{shareText}</pre>
-              <div className="share-buttons" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-around', gap: '0.5rem' }}>
-                <button onClick={handleShare} className="btn-glass" style={{ flex: 1 }}>Copy</button>
-                <button onClick={handleSkeetResults} disabled={isPostingSkeet} className="btn-glass" style={{ flex: 1, opacity: isPostingSkeet ? 0.6 : 1 }}>
-                  {isPostingSkeet ? 'Posting...' : 'Post'}
-                </button>
-              </div>
-            </div>
-          )}
-          
-        </div>
+        </>
       )}
     </div>
   )

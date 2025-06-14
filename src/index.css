@@ -1,11 +1,70 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
-#root { display: flex; align-items: center; justify-content: center; height: 100vh; }
+#root { display: flex; align-items: flex-start; justify-content: center; min-height: 100vh; }
 
 .login { display: flex; flex-direction: column; gap: 0.5rem; align-items: center; }
 .login input { padding: 0.5rem; font-size: 1rem; width: 15rem; }
 .login button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
-.game { text-align: center; }
+.app {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.game-header-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(18, 18, 19, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.navigation-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 600px;
+  margin: 0 auto;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0 0.5rem;
+}
+
+/* Responsive styles */
+@media (max-width: 480px) {
+  .navigation-container {
+    gap: 0.25rem;
+  }
+  
+  .navigation-container .btn-glass {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .game-title {
+    font-size: 1.2rem;
+  }
+  
+  .game {
+    margin-top: 4rem;
+    padding: 0.75rem;
+  }
+}
+
+.game {
+  text-align: center;
+  margin-top: 4.5rem;
+  padding: 1rem;
+  width: 100%;
+  max-width: 600px;
+}
 
 .board { 
   display: grid; 
@@ -210,7 +269,11 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
 }
 .message { margin-top: 1rem; font-size: 1.2rem; }
 
-.game-title { margin-bottom: 1rem; font-size: 2rem; }
+.game-title { 
+  margin: 0; 
+  font-size: 1.5rem; 
+  white-space: nowrap;
+}
 
 /* Mobile keyboard container visibility */
 .mobile-keyboard-container {
