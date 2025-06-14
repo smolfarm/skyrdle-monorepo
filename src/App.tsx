@@ -18,9 +18,8 @@ const App: React.FC = () => {
   const [password, setPassword] = useState('');
   const [did, setDid] = useState<string | null>(() => restoreSession());
   const [status, setStatus] = useState<GameStatus>(GameStatus.Playing);
-  const [gameNumber, setGameNumber] = useState<number | null>(null); // Current day's game number
+  const [gameNumber, setGameNumber] = useState<number | null>(null);
   const [viewedGameNumber, setViewedGameNumber] = useState<number | null>(null);
-  const [viewedGameTargetWord, setViewedGameTargetWord] = useState<string | null>(null);
   const [maxGameNumber, setMaxGameNumber] = useState<number | null>(null);
   const [guesses, setGuesses] = useState<ServerGuess[]>([]);
   const [current, setCurrent] = useState<string[]>([]);
@@ -65,7 +64,6 @@ const App: React.FC = () => {
         setGameNumber(data.gameNumber)
         setViewedGameNumber(data.gameNumber)
         setMaxGameNumber(data.gameNumber)
-        setViewedGameTargetWord(null)
         setStatus(GameStatus[data.status as keyof typeof GameStatus])
         setExistingScore(undefined)
         setCurrent([])
@@ -76,39 +74,40 @@ const App: React.FC = () => {
   };
 
   /*
-   * Pull a specific game from the server
+   * Pull a specific game's state for the user.
    */
   const fetchSpecificGame = async (userDid: string, gameNumToFetch: number) => {
-    if (!userDid) return;
+    if (!userDid) return
+
     fetch(`/api/game/${gameNumToFetch}?did=${userDid}`)
       .then(res => res.json())
       .then(data => {
         if (data.error) {
-          alert(`Error fetching game ${gameNumToFetch}: ${data.error}`);
-          // Optionally, revert viewedGameNumber to a known good state if fetch fails
-          // For example, back to maxGameNumber if it's different
+          alert(`Error fetching game ${gameNumToFetch}: ${data.error}`)
           if (maxGameNumber && viewedGameNumber !== maxGameNumber) {
-             setViewedGameNumber(maxGameNumber); // Or the previous valid viewedGameNumber
+             setViewedGameNumber(maxGameNumber)
           }
-          return;
+          return
         }
-        const newGuesses = data.guesses as AtProtoServerGuess[];
-        setGuesses(newGuesses);
-        setViewedGameNumber(data.gameNumber);
-        setViewedGameTargetWord(data.targetWord); // Store target word for past game
-        setStatus(GameStatus[data.status as keyof typeof GameStatus]);
+        const newGuesses = data.guesses as AtProtoServerGuess[]
+        setGuesses(newGuesses)
+        setViewedGameNumber(data.gameNumber)
+        setStatus(GameStatus[data.status as keyof typeof GameStatus])
         setCurrent([]); // Clear current guess input
+
         // Calculate which keys should be disabled
-        calculateAbsentLetters(newGuesses);
+        calculateAbsentLetters(newGuesses)
+        
         // Fetch score for the viewed game
-        getScore(userDid, data.gameNumber).then(score => setExistingScore(score));
-        // Update share text for the viewed game
+        getScore(userDid, data.gameNumber).then(score => setExistingScore(score))
+        
+        // NOTE: Updating the share text handled by a useEffect()
       })
       .catch(err => {
-        console.error(`Error fetching game ${gameNumToFetch}:`, err);
-        alert(`Failed to fetch game ${gameNumToFetch}.`);
-      });
-  };
+        console.error(`Error fetching game ${gameNumToFetch}:`, err)
+        alert(`Failed to fetch game ${gameNumToFetch}.`)
+      })
+  }
 
   /*
    * Fetch the previous game
@@ -135,14 +134,14 @@ const generateEmojiGrid = (gameNum: number | null, gameGuesses: AtProtoServerGue
     correct: '🟩',
     present: '🟨',
     absent: '⬜',
-  };
+  }
 
   const grid = gameGuesses.map(guess =>
     guess.evaluation.map(evalType => EMOJI_MAP[evalType]).join('')
-  ).join('\n');
+  ).join('\n')
 
-  return title + grid;
-};
+  return title + grid
+}
 
 const handleShare = async () => {
   if (navigator.clipboard && shareText) {
