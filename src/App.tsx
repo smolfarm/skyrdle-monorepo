@@ -29,6 +29,29 @@ const App: React.FC = () => {
   const [shareText, setShareText] = useState('');
   const [isPostingSkeet, setIsPostingSkeet] = useState(false);
   const [existingScore, setExistingScore] = useState<number | null | undefined>(undefined);
+  const [absentLetters, setAbsentLetters] = useState<string[]>([]);
+  
+  // Calculate which letters should be disabled on the keyboard
+  const calculateAbsentLetters = (currentGuesses: ServerGuess[]) => {
+    const letterStatuses: Record<string, Set<'correct'|'present'|'absent'>> = {};
+    
+    // Track all statuses for each letter
+    currentGuesses.forEach(({ letters, evaluation }) => {
+      letters.forEach((letter, i) => {
+        if (!letterStatuses[letter]) letterStatuses[letter] = new Set();
+        letterStatuses[letter].add(evaluation[i]);
+      });
+    });
+    
+    // A letter is truly absent if it has been marked absent and never marked present or correct
+    const trueAbsentLetters = Object.entries(letterStatuses)
+      .filter(([_, statuses]) => 
+        statuses.has('absent') && !statuses.has('correct') && !statuses.has('present')
+      )
+      .map(([letter]) => letter);
+      
+    setAbsentLetters(trueAbsentLetters);
+  };
 
   /*
    * Pull the current game from the server
@@ -37,7 +60,8 @@ const App: React.FC = () => {
     fetch(`/api/game?did=${userDid}`)
       .then(res => res.json())
       .then(data => {
-        setGuesses(data.guesses as AtProtoServerGuess[]);
+        const newGuesses = data.guesses as AtProtoServerGuess[];
+        setGuesses(newGuesses);
         setGameNumber(data.gameNumber)
         setViewedGameNumber(data.gameNumber)
         setMaxGameNumber(data.gameNumber)
@@ -46,6 +70,7 @@ const App: React.FC = () => {
         setExistingScore(undefined)
         setCurrent([])
         setShareText('')
+        calculateAbsentLetters(newGuesses)
       })
       .catch(console.error);
   };
@@ -67,11 +92,14 @@ const App: React.FC = () => {
           }
           return;
         }
-        setGuesses(data.guesses as AtProtoServerGuess[]);
+        const newGuesses = data.guesses as AtProtoServerGuess[];
+        setGuesses(newGuesses);
         setViewedGameNumber(data.gameNumber);
         setViewedGameTargetWord(data.targetWord); // Store target word for past game
         setStatus(GameStatus[data.status as keyof typeof GameStatus]);
         setCurrent([]); // Clear current guess input
+        // Calculate which keys should be disabled
+        calculateAbsentLetters(newGuesses);
         // Fetch score for the viewed game
         getScore(userDid, data.gameNumber).then(score => setExistingScore(score));
         // Update share text for the viewed game
@@ -204,6 +232,7 @@ const handleShare = async () => {
           if (did && viewedGameNumber !== null) fetchSpecificGame(did, viewedGameNumber); // Refresh the viewed game's data
           setStatus(GameStatus[data.status as keyof typeof GameStatus]); // This status is for the game guessed on
           setCurrent([]);
+          calculateAbsentLetters(data.guesses);
         })
         .catch(console.error);
     } else if (key === 'Backspace') {
@@ -260,7 +289,9 @@ const handleShare = async () => {
     })
       .then(res => res.json())
       .then(data => {
-        setGuesses(data.guesses);
+        const newGuesses = data.guesses;
+        setGuesses(newGuesses);
+        calculateAbsentLetters(newGuesses);
         if (did && viewedGameNumber !== null) fetchSpecificGame(did, viewedGameNumber);
         setStatus(GameStatus[data.status as keyof typeof GameStatus]);
         setCurrent([]);
@@ -350,6 +381,7 @@ const handleShare = async () => {
           {/* Mobile keyboard only on mobile */}
           <div className="mobile-keyboard-container">
             <MobileKeyboard
+              absentLetters={absentLetters}
               onKey={handleVirtualKey}
               onEnter={handleVirtualKeyEnter}
               onDelete={handleVirtualKeyBackspace}

@@ -205,27 +205,25 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
   max-width: 500px;
 }
 
-@media (max-width: 600px) {
-  .mobile-keyboard-container {
-    display: block;
-  }
-  
-  /* Fix tile spacing when keyboard is visible */
-  .board {
-    width: 250px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-bottom: 0.5rem;
-  }
-  
-  .row {
-    gap: 0.35rem;
-  }
-  
-  .cell {
-    width: 2.8rem;
-    height: 2.8rem;
-  }
+.mobile-keyboard-container {
+  display: block;
+}
+
+/* Fix tile spacing when keyboard is visible */
+.board {
+  width: 250px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 0.5rem;
+}
+
+.row {
+  gap: 0.35rem;
+}
+
+.cell {
+  width: 2.8rem;
+  height: 2.8rem;
 }
 
 /* Keyboard styling */
@@ -265,4 +263,9 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
   width: 45%;
   font-size: 0.9rem;
   padding: 0 0.5rem;
+}
+
+.key:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }

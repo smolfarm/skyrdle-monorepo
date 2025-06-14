@@ -4,11 +4,12 @@ interface Props {
   onKey: (key: string) => void;
   onEnter: () => void;
   onDelete: () => void;
+  absentLetters: string[];
 }
 
 const rows = ['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
 
-const MobileKeyboard: React.FC<Props> = ({ onKey, onEnter, onDelete }) => {
+const MobileKeyboard: React.FC<Props> = ({ onKey, onEnter, onDelete, absentLetters }) => {
   return (
     <div className="keyboard">
       {rows.map((row, idx) => (
@@ -18,6 +19,7 @@ const MobileKeyboard: React.FC<Props> = ({ onKey, onEnter, onDelete }) => {
               key={letter}
               className="key btn-glass"
               onClick={() => onKey(letter)}
+              disabled={absentLetters.includes(letter)}
             >
               {letter}
             </button>
