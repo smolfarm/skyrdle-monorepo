@@ -195,17 +195,17 @@ const handleShare = async () => {
         identifier,
         password,
         requires2FA ? twoFactorCode : undefined
-      );
-      setDid(data.did);
+      )
+      setDid(data.did)
     } catch (e: any) {
       if (e.error === 'AuthFactorTokenRequired') {
-        setRequires2FA(true);
-        setTwoFactorCode('');
-        return;
+        setRequires2FA(true)
+        setTwoFactorCode('')
+        return
       }
-      alert('Login failed: ' + (e.message || JSON.stringify(e)));
+      alert('Login failed: ' + (e.message || JSON.stringify(e)))
     }
-  };
+  }
 
   /*
    * Handle keyboard input
@@ -231,20 +231,20 @@ const handleShare = async () => {
           if (did && viewedGameNumber !== null) fetchSpecificGame(did, viewedGameNumber); // Refresh the viewed game's data
           setStatus(GameStatus[data.status as keyof typeof GameStatus]); // This status is for the game guessed on
           setCurrent([]);
-          calculateAbsentLetters(data.guesses);
+          calculateAbsentLetters(data.guesses)
         })
         .catch(console.error);
     } else if (key === 'Backspace') {
-      setCurrent(current.slice(0, -1));
+      setCurrent(current.slice(0, -1))
     } else if (/^[a-zA-Z]$/.test(key) && current.length < WORD_LENGTH) {
-      setCurrent([...current, key.toUpperCase()]);
+      setCurrent([...current, key.toUpperCase()])
     }
-  };
+  }
 
   useEffect(() => {
-    window.addEventListener('keydown', onKeyDown as any);
-    return () => window.removeEventListener('keydown', onKeyDown as any);
-  });
+    window.addEventListener('keydown', onKeyDown as any)
+    return () => window.removeEventListener('keydown', onKeyDown as any)
+  })
 
   /*
    * Save score when a game ends, and generate share text for any completed game
@@ -258,25 +258,26 @@ const handleShare = async () => {
           // At this point, viewedGameNumber is guaranteed to be a number.
           await saveScore(did, viewedGameNumber, scoreVal, guesses);
           setExistingScore(scoreVal);
-        })();
+        })()
       }
     }
 
     // Generate share text if the currently viewed game is Won or Lost
     if (viewedGameNumber !== null && (status === GameStatus.Won || status === GameStatus.Lost)) {
-      setShareText(generateEmojiGrid(viewedGameNumber, guesses, status));
+      setShareText(generateEmojiGrid(viewedGameNumber, guesses, status))
     } else {
-      setShareText(''); // Clear share text if game is Playing or not loaded
+      setShareText('') // Clear share text if game is Playing or not loaded
     }
-  }, [status, did, viewedGameNumber, existingScore, guesses]);
+  }, [status, did, viewedGameNumber, existingScore, guesses])
 
-  // Mobile keyboard handlers
+  // Virtual keyboard handlers
   const handleVirtualKey = (key: string) => {
     if (!did || status !== GameStatus.Playing) return;
     if (/^[A-Z]$/.test(key) && current.length < WORD_LENGTH) {
       setCurrent(prev => [...prev, key]);
     }
-  };
+  }
+
   const handleVirtualKeyEnter = () => {
     if (!did || status !== GameStatus.Playing) return;
     if (current.length !== WORD_LENGTH) return;
@@ -296,11 +297,12 @@ const handleShare = async () => {
         setCurrent([]);
       })
       .catch(console.error);
-  };
+  }
+
   const handleVirtualKeyBackspace = () => {
     if (!did || status !== GameStatus.Playing) return;
     setCurrent(prev => prev.slice(0, -1));
-  };
+  }
 
   // render board
   const renderCell = (char: string, idx: number, evals?: ('correct'|'present'|'absent')[]) => {
@@ -358,7 +360,7 @@ const handleShare = async () => {
               >
                 Next
               </button>
-            </div>
+          </div>
 
           <div className="game-header" style={{ textAlign: 'center', marginBottom: '1rem' }}>
             <h1 className="game-title" style={{ marginBlock: '0.5rem' }}>Skyrdle #{viewedGameNumber !== null ? viewedGameNumber : gameNumber}</h1>
