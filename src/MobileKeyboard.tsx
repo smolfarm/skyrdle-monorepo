@@ -4,12 +4,19 @@ interface Props {
   onKey: (key: string) => void;
   onEnter: () => void;
   onDelete: () => void;
-  absentLetters: string[];
+  keyboardStatus: Record<string, 'correct' | 'present' | 'absent' | null>;
 }
 
 const rows = ['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
 
-const MobileKeyboard: React.FC<Props> = ({ onKey, onEnter, onDelete, absentLetters }) => {
+const MobileKeyboard: React.FC<Props> = ({ onKey, onEnter, onDelete, keyboardStatus }) => {
+  // Function to determine key class based on its status
+  const getKeyClass = (letter: string): string => {
+    const status = keyboardStatus[letter];
+    if (!status) return 'key btn-glass'; // Default state
+    return `key btn-glass key-${status}`; // correct, present, or absent
+  };
+
   return (
     <div className="keyboard">
       {rows.map((row, idx) => (
@@ -17,9 +24,9 @@ const MobileKeyboard: React.FC<Props> = ({ onKey, onEnter, onDelete, absentLette
           {row.split('').map(letter => (
             <button
               key={letter}
-              className="key btn-glass"
+              className={getKeyClass(letter)}
               onClick={() => onKey(letter)}
-              disabled={absentLetters.includes(letter)}
+              disabled={keyboardStatus[letter] === 'absent'}
             >
               {letter}
             </button>

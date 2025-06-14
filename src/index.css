@@ -313,6 +313,27 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
   justify-content: center;
   font-weight: bold;
   font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+/* Key status styles */
+.key-correct {
+  background: rgba(83, 141, 78, 0.8) !important; 
+  border-color: rgba(83, 141, 78, 0.9) !important;
+  box-shadow: 0 4px 8px rgba(83, 141, 78, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+.key-present {
+  background: rgba(181, 159, 59, 0.8) !important; 
+  border-color: rgba(181, 159, 59, 0.9) !important;
+  box-shadow: 0 4px 8px rgba(181, 159, 59, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  color: #fff !important;
+}
+
+.key-absent {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
 }
 
 /* Action keys (Enter/Del) */

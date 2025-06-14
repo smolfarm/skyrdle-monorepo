@@ -28,28 +28,34 @@ const App: React.FC = () => {
   const [shareText, setShareText] = useState('');
   const [isPostingSkeet, setIsPostingSkeet] = useState(false);
   const [existingScore, setExistingScore] = useState<number | null | undefined>(undefined);
-  const [absentLetters, setAbsentLetters] = useState<string[]>([]);
+  // Track keyboard key statuses: correct, present, or absent
+  const [keyboardStatus, setKeyboardStatus] = useState<Record<string, 'correct' | 'present' | 'absent' | null>>({});
   
-  // Calculate which letters should be disabled on the keyboard
-  const calculateAbsentLetters = (currentGuesses: ServerGuess[]) => {
-    const letterStatuses: Record<string, Set<'correct'|'present'|'absent'>> = {};
+  // Calculate keyboard key statuses with priority: correct > present > default > absent
+  const calculateKeyboardStatus = (currentGuesses: ServerGuess[]) => {
+    const newKeyboardStatus: Record<string, 'correct' | 'present' | 'absent' | null> = {};
     
-    // Track all statuses for each letter
+    // Process all guesses to determine the status of each letter
     currentGuesses.forEach(({ letters, evaluation }) => {
       letters.forEach((letter, i) => {
-        if (!letterStatuses[letter]) letterStatuses[letter] = new Set();
-        letterStatuses[letter].add(evaluation[i]);
+        const currentStatus = newKeyboardStatus[letter];
+        const newStatus = evaluation[i];
+        
+        // Apply priority rules: correct > present > default > absent
+        if (newStatus === 'correct') {
+          // Correct always takes priority
+          newKeyboardStatus[letter] = 'correct';
+        } else if (newStatus === 'present' && currentStatus !== 'correct') {
+          // Present takes priority unless the letter is already marked correct
+          newKeyboardStatus[letter] = 'present';
+        } else if (newStatus === 'absent' && currentStatus !== 'correct' && currentStatus !== 'present') {
+          // Absent only applies if the letter isn't already marked correct or present
+          newKeyboardStatus[letter] = 'absent';
+        }
       });
     });
     
-    // A letter is truly absent if it has been marked absent and never marked present or correct
-    const trueAbsentLetters = Object.entries(letterStatuses)
-      .filter(([_, statuses]) => 
-        statuses.has('absent') && !statuses.has('correct') && !statuses.has('present')
-      )
-      .map(([letter]) => letter);
-      
-    setAbsentLetters(trueAbsentLetters);
+    setKeyboardStatus(newKeyboardStatus);
   };
 
   /*
@@ -68,7 +74,7 @@ const App: React.FC = () => {
         setExistingScore(undefined)
         setCurrent([])
         setShareText('')
-        calculateAbsentLetters(newGuesses)
+        calculateKeyboardStatus(newGuesses)
       })
       .catch(console.error);
   };
@@ -96,7 +102,7 @@ const App: React.FC = () => {
         setCurrent([]); // Clear current guess input
 
         // Calculate which keys should be disabled
-        calculateAbsentLetters(newGuesses)
+        calculateKeyboardStatus(newGuesses)
         
         // Fetch score for the viewed game
         getScore(userDid, data.gameNumber).then(score => setExistingScore(score))
@@ -231,7 +237,7 @@ const handleShare = async () => {
           if (did && viewedGameNumber !== null) fetchSpecificGame(did, viewedGameNumber); // Refresh the viewed game's data
           setStatus(GameStatus[data.status as keyof typeof GameStatus]); // This status is for the game guessed on
           setCurrent([]);
-          calculateAbsentLetters(data.guesses)
+          calculateKeyboardStatus(data.guesses)
         })
         .catch(console.error);
     } else if (key === 'Backspace') {
@@ -291,7 +297,7 @@ const handleShare = async () => {
       .then(data => {
         const newGuesses = data.guesses;
         setGuesses(newGuesses);
-        calculateAbsentLetters(newGuesses);
+        calculateKeyboardStatus(newGuesses);
         if (did && viewedGameNumber !== null) fetchSpecificGame(did, viewedGameNumber);
         setStatus(GameStatus[data.status as keyof typeof GameStatus]);
         setCurrent([]);
@@ -382,7 +388,7 @@ const handleShare = async () => {
             {/* Mobile keyboard only on mobile */}
             <div className="mobile-keyboard-container">
               <MobileKeyboard
-                absentLetters={absentLetters}
+                keyboardStatus={keyboardStatus}
                 onKey={handleVirtualKey}
                 onEnter={handleVirtualKeyEnter}
                 onDelete={handleVirtualKeyBackspace}
