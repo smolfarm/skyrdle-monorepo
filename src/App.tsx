@@ -31,6 +31,7 @@ const App: React.FC = () => {
   const [existingScore, setExistingScore] = useState<number | null | undefined>(undefined);
   // Track keyboard key statuses: correct, present, or absent
   const [keyboardStatus, setKeyboardStatus] = useState<Record<string, 'correct' | 'present' | 'absent' | null>>({});
+  const [showAbout, setShowAbout] = useState(false);
 
   // Restore session on mount
   useEffect(() => {
@@ -378,6 +379,7 @@ const handleShare = async () => {
               >
                 Next
               </button>
+              <button type="button" className="btn-glass about-button" onClick={() => setShowAbout(true)}>About</button>
             </div>
           </header>
           
@@ -427,7 +429,18 @@ const handleShare = async () => {
               </div>
             )}
           </div>
-        </>
+        {showAbout && (
+          <div className="modal-overlay" onClick={() => setShowAbout(false)}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <h2>Skyrdle</h2>
+              <p>made with &lt;3 by <a href="https://smol.farm" target="_blank" rel="noopener noreferrer">smol farm</a></p>
+              <p><a href="https://bsky.app/profile/skyrdle.com" target="_blank" rel="noopener noreferrer">follow skyrdle on bluesky</a></p>
+              <p><a href="https://github.com/smolfarm/skyrdle-monorepo" target="_blank" rel="noopener noreferrer">view source on github</a></p>
+              <button className="btn-glass" onClick={() => setShowAbout(false)}>Close</button>
+            </div>
+          </div>
+        )}
+      </>
       )}
     </div>
   )
