@@ -379,7 +379,6 @@ const handleShare = async () => {
               >
                 Next
               </button>
-              <button type="button" className="btn-glass about-button" onClick={() => setShowAbout(true)}>About</button>
             </div>
           </header>
           
@@ -429,6 +428,11 @@ const handleShare = async () => {
               </div>
             )}
           </div>
+          <footer className="game-footer">
+            <button type="button" className="btn-glass btn-sm" onClick={() => setShowAbout(true)}>About</button>
+            <button type="button" className="btn-glass btn-sm" onClick={() => { localStorage.removeItem('skyrdleSession'); setDid(null); }}>Logout</button>
+          </footer>
+
         {showAbout && (
           <div className="modal-overlay" onClick={() => setShowAbout(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>

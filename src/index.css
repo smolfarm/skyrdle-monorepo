@@ -435,3 +435,16 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
 .about-button {
   margin-left: 1rem;
 }
+
+.game-footer {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
