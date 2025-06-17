@@ -1,19 +1,29 @@
 import { AtpAgent } from '@atproto/api';
 import { XRPCError } from '@atproto/xrpc';
 
+// Resolve user handle to DID
+async function resolveHandle(handle: string): Promise<string> {
+  const res = await fetch(`https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`)
+  if (!res.ok) throw new Error(`Failed to resolve handle: ${res.status}`);
+  const data = await res.json();
+  return data.did;
+}
+
+// Resolve DID to PDS URL via PLC directory
+async function resolvePdsUrl(did: string): Promise<string> {
+  const res = await fetch(`https://plc.directory/${encodeURIComponent(did)}`);
+  if (!res.ok) throw new Error(`Failed to resolve PDS URL: ${res.status}`);
+  const data = await res.json();
+  return data.service[0].serviceEndpoint;
+}
+
 const USER_SCORE_COLLECTION = 'farm.smol.games.skyrdle.score'
 
 // Define the type for a guess with evaluation
 export type ServerGuess = { letters: string[]; evaluation: ('correct'|'present'|'absent')[] }
 
-// Initialize AT Protocol agent with session persistence
-export const agent = new AtpAgent({
-  service: 'https://bsky.social',
-  persistSession: (_evt: any, session: any) => {
-    if (session) localStorage.setItem('skyrdleSession', JSON.stringify(session));
-    else localStorage.removeItem('skyrdleSession');
-  },
-})
+// AT Protocol agent, will be instantiated after resolving PDS
+export let agent: any;
 
 /**
  * Login with optional 2FA.
@@ -27,7 +37,23 @@ export async function login(
   authFactorToken?: string,
   code?: string
 ): Promise<{ did: string }> {
-  const body: any = { identifier, password };
+  // resolve DID and PDS before creating session
+  const did = identifier.startsWith('did:')
+    ? identifier
+    : await resolveHandle(identifier);
+  const pdsUrl = await resolvePdsUrl(did);
+  // instantiate agent against user's PDS
+  agent = new AtpAgent({
+    service: pdsUrl,
+    persistSession: (_evt: any, session: any) => {
+      if (session) {
+        localStorage.setItem('skyrdleSession', JSON.stringify({ ...session, pds: pdsUrl }));
+      } else {
+        localStorage.removeItem('skyrdleSession');
+      }
+    },
+  });
+  const body: any = { identifier: did, password };
   if (authFactorToken) body.authFactorToken = authFactorToken;
   if (code) body.code = code;
   try {
@@ -39,6 +65,7 @@ export async function login(
       handle: res.data.handle,
       did: res.data.did,
       email: res.data.email,
+      pds: agent.service,
     };
     // persist session manually (fallback)
     localStorage.setItem('skyrdleSession', JSON.stringify(agent.session));
@@ -168,6 +195,22 @@ export function restoreSession(): string | null {
   if (!raw) return null;
   try {
     const session = JSON.parse(raw);
+    const pdsUrl = session.pds;
+    if (!pdsUrl) {
+      localStorage.removeItem('skyrdleSession');
+      return null;
+    }
+    // instantiate agent against stored PDS
+    agent = new AtpAgent({
+      service: pdsUrl,
+      persistSession: (_evt: any, s: any) => {
+        if (s) {
+          localStorage.setItem('skyrdleSession', JSON.stringify({ ...s, pds: pdsUrl }));
+        } else {
+          localStorage.removeItem('skyrdleSession');
+        }
+      },
+    });
     agent.session = session;
     return session.did;
   } catch {
