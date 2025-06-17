@@ -2,6 +2,7 @@ import React, { useState, useEffect, KeyboardEvent, ChangeEvent } from 'react';
 import { ServerGuess } from './atproto';
 import { login, saveScore, restoreSession, getScore, postSkeet, ServerGuess as AtProtoServerGuess } from './atproto';
 import MobileKeyboard from './MobileKeyboard';
+import logo from './logo.jpg';
 
 const WORD_LENGTH = 5
 
@@ -324,6 +325,7 @@ const handleShare = async () => {
     <div className="app">
       {!did ? (
         <div className="login">
+            <img src={logo} alt="Skyrdle Logo" className="login-logo" />
           <h2>Login to Skyrdle</h2>
           <input
             placeholder="AT Proto ID"
