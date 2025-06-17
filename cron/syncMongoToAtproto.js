@@ -190,6 +190,7 @@ async function syncMongoToAtproto() {
           // Mark as synced in MongoDB
           game.syncedToAtproto = true;
           await game.save();
+          
           console.log(`✅ Successfully synced game ${game.gameNumber} for user ${game.did}`);
           successCount++;
         } else {
