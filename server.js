@@ -48,6 +48,7 @@ const gameSchema = new mongoose.Schema({
   status: { type: String, enum: ['Playing', 'Won', 'Lost'], default: 'Playing' },
   gameNumber: { type: Number, required: true, index: true },
   scoreHash: { type: String },
+  syncedToAtproto: { type: Boolean, default: false }
 })
 
 // Compound index for did and gameNumber to ensure uniqueness per user per game

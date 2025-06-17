@@ -190,11 +190,29 @@ async function syncMongoToAtproto() {
           // Mark as synced in MongoDB
           game.syncedToAtproto = true;
           await game.save();
+          
           console.log(`✅ Successfully synced game ${game.gameNumber} for user ${game.did}`);
           successCount++;
         } else {
-          console.error(`❌ Failed to sync game ${game.gameNumber} for user ${game.did}`);
-          failCount++;
+          // Attempt to fetch existing record to handle duplicates
+          try {
+            const recordHash = crypto.createHash('sha256')
+              .update(`${game.did}|${game.gameNumber}|${game.status === 'Won' ? game.guesses.length : -1}`)
+              .digest('hex');
+            await agent.api.com.atproto.repo.getRecord({
+              repo: agent.session.did,
+              collection: PLAYER_SCORE_COLLECTION,
+              rkey: recordHash,
+            });
+            console.log(`Record exists for ${game.did} game ${game.gameNumber}. Marking as synced.`);
+            game.syncedToAtproto = true;
+            await game.save();
+            successCount++;
+            continue;
+          } catch (getErr) {
+            console.error(`❌ Failed to sync game ${game.gameNumber} for user ${game.did}`, getErr);
+            failCount++;
+          }
         }
       } catch (gameError) {
         console.error(`❌ Error processing game ${game.gameNumber} for user ${game.did}:`, gameError);
