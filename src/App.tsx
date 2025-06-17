@@ -17,7 +17,7 @@ enum GameStatus {
 const App: React.FC = () => {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [did, setDid] = useState<string | null>(() => restoreSession());
+  const [did, setDid] = useState<string | null>(null);
   const [status, setStatus] = useState<GameStatus>(GameStatus.Playing);
   const [gameNumber, setGameNumber] = useState<number | null>(null);
   const [viewedGameNumber, setViewedGameNumber] = useState<number | null>(null);
@@ -31,6 +31,14 @@ const App: React.FC = () => {
   const [existingScore, setExistingScore] = useState<number | null | undefined>(undefined);
   // Track keyboard key statuses: correct, present, or absent
   const [keyboardStatus, setKeyboardStatus] = useState<Record<string, 'correct' | 'present' | 'absent' | null>>({});
+
+  // Restore session on mount
+  useEffect(() => {
+    (async () => {
+      const storedDid = await restoreSession();
+      if (storedDid) setDid(storedDid);
+    })();
+  }, []);
   
   // Calculate keyboard key statuses with priority: correct > present > default > absent
   const calculateKeyboardStatus = (currentGuesses: ServerGuess[]) => {

@@ -190,16 +190,13 @@ export async function postSkeet(text: string) {
  * Restore saved session from localStorage and hydrate agent.
  * Returns DID if found, else null.
  */
-export function restoreSession(): string | null {
+export async function restoreSession(): Promise<string | null> {
   const raw = localStorage.getItem('skyrdleSession');
   if (!raw) return null;
   try {
     const session = JSON.parse(raw);
-    const pdsUrl = session.pds;
-    if (!pdsUrl) {
-      localStorage.removeItem('skyrdleSession');
-      return null;
-    }
+    const pdsUrl = session.pds || await resolvePdsUrl(session.did);
+    // pdsUrl resolved dynamically
     // instantiate agent against stored PDS
     agent = new AtpAgent({
       service: pdsUrl,
