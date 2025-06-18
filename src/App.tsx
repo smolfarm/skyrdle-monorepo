@@ -149,7 +149,7 @@ const generateEmojiGrid = (gameNum: number | null, gameGuesses: AtProtoServerGue
   const EMOJI_MAP = {
     correct: '🟩',
     present: '🟨',
-    absent: '⬜',
+    absent: '⬛',
   }
 
   const grid = gameGuesses.map(guess =>
