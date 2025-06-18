@@ -337,7 +337,7 @@ const handleShare = async () => {
             <img src={logo} alt="Skyrdle Logo" className="login-logo" />
           <h2>Login to Skyrdle</h2>
           <input
-            placeholder="AT Proto ID"
+            placeholder="Bluesky Username or Email"
             value={identifier}
             onChange={(e: ChangeEvent<HTMLInputElement>) => setIdentifier(e.target.value)}
           />
