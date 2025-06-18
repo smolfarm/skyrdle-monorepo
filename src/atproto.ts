@@ -151,16 +151,29 @@ export async function postSkeet(text: string) {
   if (!agent.session?.did) throw new Error('Not logged in')
 
   try {
-    await agent.com.atproto.repo.createRecord({
-      repo: agent.session.did,
-      collection: 'app.bsky.feed.post',
-      record: {
-        $type: 'app.bsky.feed.post',
-        text: text,
-        createdAt: new Date().toISOString(),
-        langs: ['en']
-      },
-    })
+    const encoder = new TextEncoder();
+      const facets: any[] = [];
+      const keyword = 'Skyrdle';
+      const idx = text.indexOf(keyword);
+      if (idx !== -1) {
+        const byteStart = encoder.encode(text.slice(0, idx)).length;
+        const byteEnd = byteStart + encoder.encode(keyword).length;
+        facets.push({
+          index: { byteStart, byteEnd },
+          features: [{ $type: 'app.bsky.richtext.facet#link', uri: 'https://skyrdle.com' }]
+        });
+      }
+      await agent.com.atproto.repo.createRecord({
+        repo: agent.session.did,
+        collection: 'app.bsky.feed.post',
+        record: {
+          $type: 'app.bsky.feed.post',
+          text,
+          createdAt: new Date().toISOString(),
+          langs: ['en'],
+          facets
+        },
+      })
   } catch (e: any) {
     if (e instanceof XRPCError && e.error === 'ExpiredToken') {
       const sess = agent.session
@@ -170,16 +183,29 @@ export async function postSkeet(text: string) {
       localStorage.setItem('skyrdleSession', JSON.stringify(agent.session))
 
       // Retry post
-      await agent.com.atproto.repo.createRecord({
-        repo: agent.session.did,
-        collection: 'app.bsky.feed.post',
-        record: {
-          $type: 'app.bsky.feed.post',
-          text: text,
-          createdAt: new Date().toISOString(),
-          langs: ['en']
-        },
-      })
+      const encoder = new TextEncoder();
+        const facets: any[] = [];
+        const keyword = 'Skyrdle';
+        const idx = text.indexOf(keyword);
+        if (idx !== -1) {
+          const byteStart = encoder.encode(text.slice(0, idx)).length;
+          const byteEnd = byteStart + encoder.encode(keyword).length;
+          facets.push({
+            index: { byteStart, byteEnd },
+            features: [{ $type: 'app.bsky.richtext.facet#link', uri: 'https://skyrdle.com' }]
+          });
+        }
+        await agent.com.atproto.repo.createRecord({
+          repo: agent.session.did,
+          collection: 'app.bsky.feed.post',
+          record: {
+            $type: 'app.bsky.feed.post',
+            text,
+            createdAt: new Date().toISOString(),
+            langs: ['en'],
+            facets
+          },
+        })
     } else {
       throw e
     }
