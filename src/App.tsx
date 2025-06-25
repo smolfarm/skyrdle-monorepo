@@ -186,11 +186,11 @@ const generateEmojiGrid = (gameNum: number | null, gameGuesses: AtProtoServerGue
 const handleShare = async () => {
   if (navigator.clipboard && shareText) {
     try {
-      await navigator.clipboard.writeText(shareText);
-      alert('Results copied to clipboard!');
+      await navigator.clipboard.writeText(shareText)
+      alert('Results copied to clipboard!')
     } catch (err) {
       console.error('Failed to copy: ', err);
-      alert('Failed to copy results.');
+      alert('Failed to copy results.')
     }
   }
 };
@@ -207,24 +207,24 @@ const handleShare = async () => {
     } finally {
       setIsPostingSkeet(false);
     }
-  };
+  }
 
   /*
    * Load game state when logged in
    */
   useEffect(() => {
     if (!did) return;
-    fetchCurrentGame(did);
-  }, [did]);
+    fetchCurrentGame(did)
+  }, [did])
 
   /*
    * Load existing score when gameNumber is known
    */
   useEffect(() => {
-    if (did && viewedGameNumber != null) { // Use viewedGameNumber for score context
-      getScore(did, viewedGameNumber).then(score => setExistingScore(score));
+    if (did && viewedGameNumber != null) {
+      getScore(did, viewedGameNumber).then(score => setExistingScore(score))
     }
-  }, [did, viewedGameNumber]);
+  }, [did, viewedGameNumber])
 
   /*
    * Handle login
