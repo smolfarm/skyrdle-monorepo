@@ -1,7 +1,8 @@
 import React, { useState, useEffect, KeyboardEvent, ChangeEvent } from 'react'
 import { ServerGuess } from './atproto'
 import { login, saveScore, restoreSession, getScore, postSkeet, ServerGuess as AtProtoServerGuess } from './atproto'
-import VirtualKeyboard from './VirtualKeyboard'
+import VirtualKeyboard from './components/VirtualKeyboard'
+import AboutModal from './components/AboutModal'
 import logo from './logo.jpg'
 
 const WORD_LENGTH = 5
@@ -448,15 +449,7 @@ const handleShare = async () => {
           </footer>
 
         {showAbout && (
-          <div className="modal-overlay" onClick={() => setShowAbout(false)}>
-            <div className="modal-content" onClick={e => e.stopPropagation()}>
-              <h2>Skyrdle</h2>
-              <p>made with &lt;3 by <a href="https://smol.farm" target="_blank" rel="noopener noreferrer">smol farm</a></p>
-              <p><a href="https://bsky.app/profile/skyrdle.com" target="_blank" rel="noopener noreferrer">follow skyrdle on bluesky</a></p>
-              <p><a href="https://github.com/smolfarm/skyrdle-monorepo" target="_blank" rel="noopener noreferrer">view source on github</a></p>
-              <button className="btn-glass" onClick={() => setShowAbout(false)}>Close</button>
-            </div>
-          </div>
+          <AboutModal onClose={() => setShowAbout(false)} />
         )}
 
         {showStats && (
