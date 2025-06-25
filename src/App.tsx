@@ -1,3 +1,14 @@
+/*
+*  _____ _   ___   _____________ _     _____ 
+* /  ___| | / | \ / / ___ \  _  \ |   |  ___|
+* \ `--.| |/ / \ V /| |_/ / | | | |   | |__  
+*  `--. \    \  \ / |    /| | | | |   |  __| 
+* /\__/ / |\  \ | | | |\ \| |/ /| |___| |___ 
+* \____/\_| \_/ \_/ \_| \_|___/ \_____|____/ 
+*                                           
+* Root React component for Skyrdle.                                          
+*/
+
 import React, { useState, useEffect, KeyboardEvent, ChangeEvent } from 'react'
 import { ServerGuess } from './atproto'
 import { login, saveScore, restoreSession, getScore, postSkeet, ServerGuess as AtProtoServerGuess } from './atproto'

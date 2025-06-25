@@ -1,3 +1,14 @@
+/*
+*  _____ _   ___   _____________ _     _____ 
+* /  ___| | / | \ / / ___ \  _  \ |   |  ___|
+* \ `--.| |/ / \ V /| |_/ / | | | |   | |__  
+*  `--. \    \  \ / |    /| | | | |   |  __| 
+* /\__/ / |\  \ | | | |\ \| |/ /| |___| |___ 
+* \____/\_| \_/ \_/ \_| \_|___/ \_____|____/ 
+*                                           
+* About modal component for displaying information about the app.                                         
+*/
+
 export default function AboutModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="modal-overlay" onClick={() => onClose()}>

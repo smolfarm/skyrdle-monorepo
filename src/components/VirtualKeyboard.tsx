@@ -1,3 +1,14 @@
+/*
+*  _____ _   ___   _____________ _     _____ 
+* /  ___| | / | \ / / ___ \  _  \ |   |  ___|
+* \ `--.| |/ / \ V /| |_/ / | | | |   | |__  
+*  `--. \    \  \ / |    /| | | | |   |  __| 
+* /\__/ / |\  \ | | | |\ \| |/ /| |___| |___ 
+* \____/\_| \_/ \_/ \_| \_|___/ \_____|____/ 
+*                                           
+* Virtual keyboard component for typing letters that highlights correct, present, or absent letters.                                          
+*/
+
 import React from 'react'
 
 interface Props {
