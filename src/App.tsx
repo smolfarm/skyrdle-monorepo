@@ -18,8 +18,6 @@ import logo from './logo.jpg'
 
 const WORD_LENGTH = 5
 
-type Guess = string[];
-
 enum GameStatus {
   Playing,
   Won,
