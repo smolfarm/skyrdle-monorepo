@@ -1,7 +1,7 @@
 import React, { useState, useEffect, KeyboardEvent, ChangeEvent } from 'react';
 import { ServerGuess } from './atproto';
 import { login, saveScore, restoreSession, getScore, postSkeet, ServerGuess as AtProtoServerGuess } from './atproto';
-import MobileKeyboard from './MobileKeyboard';
+import VirtualKeyboard from './VirtualKeyboard';
 import logo from './logo.jpg';
 
 const WORD_LENGTH = 5
@@ -33,6 +33,18 @@ const App: React.FC = () => {
   const [keyboardStatus, setKeyboardStatus] = useState<Record<string, 'correct' | 'present' | 'absent' | null>>({});
   const [showAbout, setShowAbout] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  // Stats state
+  const [stats, setStats] = useState<{ currentStreak: number; gamesWon: number; averageScore: number } | null>(null);
+
+  // Fetch stats when stats view is shown
+  useEffect(() => {
+    if (showStats && did) {
+      fetch(`/api/stats?did=${did}`)
+        .then(res => res.json())
+        .then(data => setStats(data))
+        .catch(err => console.error('Failed to fetch stats:', err));
+    }
+  }, [showStats, did]);
 
   // Restore session on mount
   useEffect(() => {
@@ -399,7 +411,7 @@ const handleShare = async () => {
             
             {/* Mobile keyboard only on mobile */}
             <div className="mobile-keyboard-container">
-              <MobileKeyboard
+              <VirtualKeyboard
                 keyboardStatus={keyboardStatus}
                 onKey={handleVirtualKey}
                 onEnter={handleVirtualKeyEnter}
@@ -451,7 +463,15 @@ const handleShare = async () => {
           <div className="modal-overlay" onClick={() => setShowStats(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
               <h2>Stats</h2>
-              
+              {stats ? (
+                <div className="stats">
+                  <p>Current Streak: {stats.currentStreak}</p>
+                  <p>Games Won: {stats.gamesWon}</p>
+                  <p>Average Score: {stats.averageScore.toFixed(2)}</p>
+                </div>
+              ) : (
+                <p>Loading...</p>
+              )}
               <button className="btn-glass" onClick={() => setShowStats(false)}>Close</button>
             </div>
           </div>

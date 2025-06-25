@@ -246,6 +246,29 @@ app.post('/api/guess', async (req, res) => {
 });
 
 // All other GET requests not handled before will return the React app
+// Stats endpoint
+app.get('/api/stats', async (req, res) => {
+  const { did } = req.query;
+  if (!did) return res.status(400).json({ error: 'Missing did' });
+  try {
+    const games = await Game.find({ did }).sort({ gameNumber: -1 });
+    let streak = 0;
+    for (const game of games) {
+      if (game.status === 'Won') streak++;
+      else break;
+    }
+    const wins = games.filter(g => g.status === 'Won').length;
+    const winGames = games.filter(g => g.status === 'Won');
+    const avg = winGames.length > 0
+      ? winGames.reduce((sum, g) => sum + g.guesses.length, 0) / winGames.length
+      : 0;
+    res.json({ currentStreak: streak, gamesWon: wins, averageScore: avg });
+  } catch (err) {
+    console.error('Error computing stats:', err);
+    res.status(500).json({ error: 'Failed to compute stats' });
+  }
+})
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'))
 })

@@ -1,21 +1,29 @@
-import React from 'react';
+import React from 'react'
 
 interface Props {
   onKey: (key: string) => void;
   onEnter: () => void;
   onDelete: () => void;
-  keyboardStatus: Record<string, 'correct' | 'present' | 'absent' | null>;
+  keyboardStatus: Record<string, 'correct' | 'present' | 'absent' | null>
 }
 
-const rows = ['QWERTYUIOP','ASDFGHJKL','ZXCVBNM'];
+const rows = ['QWERTYUIOP','ASDFGHJKL','ZXCVBNM']
 
-const MobileKeyboard: React.FC<Props> = ({ onKey, onEnter, onDelete, keyboardStatus }) => {
-  // Function to determine key class based on its status
+type VirtualKeyboardProps = {
+  onKey: (key: string) => void;
+  onEnter: () => void;
+  onDelete: () => void;
+  keyboardStatus: Record<string, 'correct' | 'present' | 'absent' | null>
+}
+
+const VirtualKeyboard: React.FC<Props> = (props: VirtualKeyboardProps) => {
+  const { onKey, onEnter, onDelete, keyboardStatus } = props
+
   const getKeyClass = (letter: string): string => {
     const status = keyboardStatus[letter];
-    if (!status) return 'key btn-glass'; // Default state
-    return `key btn-glass key-${status}`; // correct, present, or absent
-  };
+    if (!status) return 'key btn-glass' // Default state
+    return `key btn-glass key-${status}` // correct, present, or absent
+  }
 
   return (
     <div className="keyboard">
@@ -38,7 +46,7 @@ const MobileKeyboard: React.FC<Props> = ({ onKey, onEnter, onDelete, keyboardSta
         <button className="key key-action btn-glass" onClick={onDelete}>Del</button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default MobileKeyboard;
+export default VirtualKeyboard
