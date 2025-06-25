@@ -16,11 +16,9 @@ app.use(express.static(path.join(__dirname, 'dist')))
 
 const port = process.env.PORT || 4000
 
-const wordSchema = new mongoose.Schema({ 
-  gameNumber: { type: Number, required: true },
-  word: { type: String, required: true } 
-})
-const Word = mongoose.model('Word', wordSchema, 'words')
+const [Word, Game] = require('./models');
+
+
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -36,27 +34,7 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
   })
   .catch(err => console.error('MongoDB connection error:', err))
 
-// Mongoose Schema for Game State
-const guessSchema = new mongoose.Schema({
-  letters: [String],
-  evaluation: [String]
-}, { _id: false })
 
-const gameSchema = new mongoose.Schema({
-  did: { type: String, required: true, index: true },
-  targetWord: { type: String, required: true },
-  guesses: [guessSchema],
-  status: { type: String, enum: ['Playing', 'Won', 'Lost'], default: 'Playing' },
-  gameNumber: { type: Number, required: true, index: true },
-  scoreHash: { type: String },
-  syncedToAtproto: { type: Boolean, default: false },
-  completedAt: { type: Date }
-})
-
-// Compound index for did and gameNumber to ensure uniqueness per user per game
-gameSchema.index({ did: 1, gameNumber: 1 }, { unique: true })
-
-const Game = mongoose.model('Game', gameSchema)
 
 
 // Epoch at June 13th, 2025 midnight Eastern (UTC-5)

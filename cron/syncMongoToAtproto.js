@@ -7,7 +7,7 @@ const PLAYER_SCORE_COLLECTION = 'farm.smol.games.skyrdle.player.score'
 const SYNC_INTERVAL_MS = 3600000 // Run every hour (3600000 ms)
 
 // This module will use the Game model from the main server
-let Game = null;
+let Game = null
 
 // Initialize AT Protocol agent
 const agent = new AtpAgent({
@@ -22,12 +22,12 @@ async function authenticateWithAtproto() {
   try {
     // Check if we have credentials
     if (!process.env.ATPROTO_SERVER_HANDLE || !process.env.ATPROTO_SERVER_APP_PASSWORD) {
-      console.error('Missing AT Protocol credentials in environment variables');
-      console.error('Please set ATPROTO_SERVER_HANDLE and ATPROTO_SERVER_APP_PASSWORD');
-      return false;
+      console.error('Missing AT Protocol credentials in environment variables')
+      console.error('Please set ATPROTO_SERVER_HANDLE and ATPROTO_SERVER_APP_PASSWORD')
+      return false
     }
 
-    console.log(`Attempting to authenticate as ${process.env.ATPROTO_SERVER_HANDLE}...`);
+    console.log(`Attempting to authenticate as ${process.env.ATPROTO_SERVER_HANDLE}...`)
     
     const res = await agent.api.com.atproto.server.createSession({
       identifier: process.env.ATPROTO_SERVER_HANDLE,
@@ -43,13 +43,13 @@ async function authenticateWithAtproto() {
       email: res.data.email
     };
     
-    console.log(`Successfully authenticated as ${res.data.handle} (${res.data.did})`);
-    return true;
+    console.log(`Successfully authenticated as ${res.data.handle} (${res.data.did})`)
+    return true
   } catch (error) {
     if (error.status === 401) {
-      console.error('Authentication failed: Invalid credentials');
+      console.error('Authentication failed: Invalid credentials')
     } else {
-      console.error('AT Protocol authentication error:', error);
+      console.error('AT Protocol authentication error:', error)
     }
     return false;
   }
