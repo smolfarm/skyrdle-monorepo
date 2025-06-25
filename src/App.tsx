@@ -16,6 +16,7 @@ import VirtualKeyboard from './components/VirtualKeyboard'
 import AboutModal from './components/AboutModal'
 import logo from './logo.jpg'
 import Footer from './components/Footer'
+import ShareResults from './components/ShareResults'
 
 const WORD_LENGTH = 5
 
@@ -442,16 +443,7 @@ const handleShare = async () => {
             )}
 
             {shareText && (
-              <div className="share-results-box" style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #555', borderRadius: '8px', backgroundColor: '#2a2a2e' }}>
-                <h3 style={{ marginTop: 0, marginBottom: '0.5rem', textAlign: 'center' }}>Share Results</h3>
-                <pre style={{ whiteSpace: 'pre-wrap', background: '#1e1e20', padding: '10px', borderRadius: '4px', textAlign: 'left', color: '#eee', border: '1px solid #444' }}>{shareText}</pre>
-                <div className="share-buttons" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-around', gap: '0.5rem' }}>
-                  <button onClick={handleShare} className="btn-glass" style={{ flex: 1 }}>Copy</button>
-                  <button onClick={handleSkeetResults} disabled={isPostingSkeet} className="btn-glass" style={{ flex: 1, opacity: isPostingSkeet ? 0.6 : 1 }}>
-                    {isPostingSkeet ? 'Posting...' : 'Post'}
-                  </button>
-                </div>
-              </div>
+              <ShareResults shareText={shareText} onShare={handleShare} onSkeet={handleSkeetResults} isPostingSkeet={isPostingSkeet} />
             )}
           </div>
           <Footer onShowStats={() => setShowStats(true)} onShowAbout={() => setShowAbout(true)} onLogout={() => { localStorage.removeItem('skyrdleSession'); setDid(null); }} />
