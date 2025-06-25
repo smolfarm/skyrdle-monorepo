@@ -1,8 +1,8 @@
-import React, { useState, useEffect, KeyboardEvent, ChangeEvent } from 'react';
-import { ServerGuess } from './atproto';
-import { login, saveScore, restoreSession, getScore, postSkeet, ServerGuess as AtProtoServerGuess } from './atproto';
-import VirtualKeyboard from './VirtualKeyboard';
-import logo from './logo.jpg';
+import React, { useState, useEffect, KeyboardEvent, ChangeEvent } from 'react'
+import { ServerGuess } from './atproto'
+import { login, saveScore, restoreSession, getScore, postSkeet, ServerGuess as AtProtoServerGuess } from './atproto'
+import VirtualKeyboard from './VirtualKeyboard'
+import logo from './logo.jpg'
 
 const WORD_LENGTH = 5
 
