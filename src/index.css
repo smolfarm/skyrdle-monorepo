@@ -17,7 +17,8 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
   top: 0;
   left: 0;
   right: 0;
-  background: rgba(18, 18, 19, 0.95);
+  
+  background: rgba(18, 18, 19, 0.60);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
