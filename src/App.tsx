@@ -38,14 +38,14 @@ const App: React.FC = () => {
   const [requires2FA, setRequires2FA] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [shareText, setShareText] = useState('');
-  const [isPostingSkeet, setIsPostingSkeet] = useState(false);
-  const [existingScore, setExistingScore] = useState<number | null | undefined>(undefined);
+  const [isPostingSkeet, setIsPostingSkeet] = useState(false)
+  const [existingScore, setExistingScore] = useState<number | null | undefined>(undefined)
   // Track keyboard key statuses: correct, present, or absent
-  const [keyboardStatus, setKeyboardStatus] = useState<Record<string, 'correct' | 'present' | 'absent' | null>>({});
-  const [showAbout, setShowAbout] = useState(false);
-  const [showStats, setShowStats] = useState(false);
+  const [keyboardStatus, setKeyboardStatus] = useState<Record<string, 'correct' | 'present' | 'absent' | null>>({})
+  const [showAbout, setShowAbout] = useState(false)
+  const [showStats, setShowStats] = useState(false)
   // Stats state
-  const [stats, setStats] = useState<{ currentStreak: number; gamesWon: number; averageScore: number } | null>(null);
+  const [stats, setStats] = useState<{ currentStreak: number; gamesWon: number; averageScore: number } | null>(null)
 
   // Fetch stats when stats view is shown
   useEffect(() => {
@@ -55,25 +55,25 @@ const App: React.FC = () => {
         .then(data => setStats(data))
         .catch(err => console.error('Failed to fetch stats:', err));
     }
-  }, [showStats, did]);
+  }, [showStats, did])
 
   // Restore session on mount
   useEffect(() => {
     (async () => {
-      const storedDid = await restoreSession();
-      if (storedDid) setDid(storedDid);
-    })();
-  }, []);
+      const storedDid = await restoreSession()
+      if (storedDid) setDid(storedDid)
+    })()
+  }, [])
   
   // Calculate keyboard key statuses with priority: correct > present > default > absent
   const calculateKeyboardStatus = (currentGuesses: ServerGuess[]) => {
-    const newKeyboardStatus: Record<string, 'correct' | 'present' | 'absent' | null> = {};
+    const newKeyboardStatus: Record<string, 'correct' | 'present' | 'absent' | null> = {}
     
     // Process all guesses to determine the status of each letter
     currentGuesses.forEach(({ letters, evaluation }) => {
       letters.forEach((letter, i) => {
-        const currentStatus = newKeyboardStatus[letter];
-        const newStatus = evaluation[i];
+        const currentStatus = newKeyboardStatus[letter]
+        const newStatus = evaluation[i]
         
         // Apply priority rules: correct > present > default > absent
         if (newStatus === 'correct') {
@@ -81,15 +81,15 @@ const App: React.FC = () => {
           newKeyboardStatus[letter] = 'correct';
         } else if (newStatus === 'present' && currentStatus !== 'correct') {
           // Present takes priority unless the letter is already marked correct
-          newKeyboardStatus[letter] = 'present';
+          newKeyboardStatus[letter] = 'present'
         } else if (newStatus === 'absent' && currentStatus !== 'correct' && currentStatus !== 'present') {
           // Absent only applies if the letter isn't already marked correct or present
-          newKeyboardStatus[letter] = 'absent';
+          newKeyboardStatus[letter] = 'absent'
         }
-      });
-    });
+      })
+    })
     
-    setKeyboardStatus(newKeyboardStatus);
+    setKeyboardStatus(newKeyboardStatus)
   };
 
   /*
@@ -110,8 +110,8 @@ const App: React.FC = () => {
         setShareText('')
         calculateKeyboardStatus(newGuesses)
       })
-      .catch(console.error);
-  };
+      .catch(console.error)
+  }
 
   /*
    * Pull a specific game's state for the user.
@@ -420,7 +420,6 @@ const handleShare = async () => {
               )}
             </div>
             
-            {/* Mobile keyboard only on mobile */}
             <div className="mobile-keyboard-container">
               <VirtualKeyboard
                 keyboardStatus={keyboardStatus}
@@ -429,16 +428,19 @@ const handleShare = async () => {
                 onDelete={handleVirtualKeyBackspace}
               />
             </div>
+
             {status === GameStatus.Won && (
               <div className="message">
                 Congrats! You won! Score saved!
               </div>
             )}
+
             {status === GameStatus.Lost && (
               <div className="message">
                 Game Over. Score saved.
               </div>
             )}
+
             {shareText && (
               <div className="share-results-box" style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #555', borderRadius: '8px', backgroundColor: '#2a2a2e' }}>
                 <h3 style={{ marginTop: 0, marginBottom: '0.5rem', textAlign: 'center' }}>Share Results</h3>

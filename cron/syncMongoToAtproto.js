@@ -74,9 +74,9 @@ async function saveScoreToAtproto(did, gameNumber, score, guesses) {
     const formattedGuesses = guesses.map(g => ({
       letters: g.letters,
       evaluation: g.evaluation
-    }));
+    }))
     
-    console.log(`Saving score for ${did}, game ${gameNumber}: ${score}`);
+    console.log(`Saving score for ${did}, game ${gameNumber}: ${score}`)
     
     await agent.com.atproto.repo.createRecord({
       repo: agent.session.did,
@@ -86,13 +86,11 @@ async function saveScoreToAtproto(did, gameNumber, score, guesses) {
         playerDid: did,
         gameNumber,
         score,
-        timestamp: new Date().toISOString(),
         hash: recordHash,
-        isWin
       }
-    });
+    })
     
-    console.log(`Successfully saved score for ${did}, game ${gameNumber}`);
+    console.log(`Successfully saved score for ${did}, game ${gameNumber}`)
     return true;
   } catch (error) {
     // Handle token expiry
@@ -107,24 +105,24 @@ async function saveScoreToAtproto(did, gameNumber, score, guesses) {
           ...agent.session,
           accessJwt: res.data.accessJwt,
           refreshJwt: res.data.refreshJwt
-        };
+        }
         
         // Retry with refreshed token
-        return await saveScoreToAtproto(did, gameNumber, score, guesses);
+        return await saveScoreToAtproto(did, gameNumber, score, guesses)
       } catch (refreshError) {
-        console.error('Failed to refresh AT Protocol session:', refreshError);
+        console.error('Failed to refresh AT Protocol session:', refreshError)
         // Re-authenticate if refresh fails
-        await authenticateWithAtproto();
-        return await saveScoreToAtproto(did, gameNumber, score, guesses);
+        await authenticateWithAtproto()
+        return await saveScoreToAtproto(did, gameNumber, score, guesses)
       }
     } else if (error.status === 401) {
-      console.log('Authentication error, re-authenticating...');
-      await authenticateWithAtproto();
-      return await saveScoreToAtproto(did, gameNumber, score, guesses);
+      console.log('Authentication error, re-authenticating...')
+      await authenticateWithAtproto()
+      return await saveScoreToAtproto(did, gameNumber, score, guesses)
     }
     
-    console.error(`Error saving score for ${did}, game ${gameNumber}:`, error);
-    return false;
+    console.error(`Error saving score for ${did}, game ${gameNumber}:`, error)
+    return false
   }
 }
 
@@ -132,26 +130,26 @@ async function saveScoreToAtproto(did, gameNumber, score, guesses) {
 async function syncMongoToAtproto() {
   // Prevent overlapping sync operations
   if (isSyncRunning) {
-    console.log('Sync already in progress, skipping this run');
-    return;
+    console.log('Sync already in progress, skipping this run')
+    return
   }
   
-  isSyncRunning = true;
-  console.log(`Starting sync at ${new Date().toISOString()}`);
+  isSyncRunning = true
+  console.log(`Starting sync at ${new Date().toISOString()}`)
   
   try {
     // Check if Game model is initialized
     if (!Game) {
-      console.error('Game model not initialized. Make sure to call initSync() first.');
-      isSyncRunning = false;
-      return;
+      console.error('Game model not initialized. Make sure to call initSync() first')
+      isSyncRunning = false
+      return
     }
     
     // Authenticate with AT Protocol
-    const authSuccess = await authenticateWithAtproto();
+    const authSuccess = await authenticateWithAtproto()
     if (!authSuccess) {
-      console.error('Failed to authenticate with AT Protocol. Aborting sync.');
-      isSyncRunning = false;
+      console.error('Failed to authenticate with AT Protocol. Aborting sync')
+      isSyncRunning = false
       return;
     }
     
@@ -159,18 +157,18 @@ async function syncMongoToAtproto() {
     const gamesToSync = await Game.find({
       status: { $in: ['Won', 'Lost'] },
       syncedToAtproto: { $ne: true }
-    });
+    })
     
-    console.log(`Found ${gamesToSync.length} games to sync`);
+    console.log(`Found ${gamesToSync.length} games to sync`)
     
     if (gamesToSync.length === 0) {
-      console.log('No games to sync. All caught up!');
-      isSyncRunning = false;
-      return;
+      console.log('No games to sync. All caught up!')
+      isSyncRunning = false
+      return
     }
     
-    let successCount = 0;
-    let failCount = 0;
+    let successCount = 0
+    let failCount = 0
     
     // Process each game
     for (const game of gamesToSync) {
@@ -184,26 +182,26 @@ async function syncMongoToAtproto() {
           game.gameNumber,
           score,
           game.guesses
-        );
+        )
         
         if (syncSuccess) {
           // Mark as synced in MongoDB
-          game.syncedToAtproto = true;
-          await game.save();
+          game.syncedToAtproto = true
+          await game.save()
           
-          console.log(`✅ Successfully synced game ${game.gameNumber} for user ${game.did}`);
-          successCount++;
+          console.log(`✅ Successfully synced game ${game.gameNumber} for user ${game.did}`)
+          successCount++
         } else {
           // Attempt to fetch existing record to handle duplicates
           try {
             const recordHash = crypto.createHash('sha256')
               .update(`${game.did}|${game.gameNumber}|${game.status === 'Won' ? game.guesses.length : -1}`)
-              .digest('hex');
+              .digest('hex')
             await agent.api.com.atproto.repo.getRecord({
               repo: agent.session.did,
               collection: PLAYER_SCORE_COLLECTION,
               rkey: recordHash,
-            });
+            })
             console.log(`Record exists for ${game.did} game ${game.gameNumber}. Marking as synced.`);
             game.syncedToAtproto = true;
             await game.save();
