@@ -1,8 +1,9 @@
-import React, { useState, useEffect, KeyboardEvent, ChangeEvent } from 'react';
-import { ServerGuess } from './atproto';
-import { login, saveScore, restoreSession, getScore, postSkeet, ServerGuess as AtProtoServerGuess } from './atproto';
-import MobileKeyboard from './MobileKeyboard';
-import logo from './logo.jpg';
+import React, { useState, useEffect, KeyboardEvent, ChangeEvent } from 'react'
+import { ServerGuess } from './atproto'
+import { login, saveScore, restoreSession, getScore, postSkeet, ServerGuess as AtProtoServerGuess } from './atproto'
+import VirtualKeyboard from './components/VirtualKeyboard'
+import AboutModal from './components/AboutModal'
+import logo from './logo.jpg'
 
 const WORD_LENGTH = 5
 
@@ -32,6 +33,19 @@ const App: React.FC = () => {
   // Track keyboard key statuses: correct, present, or absent
   const [keyboardStatus, setKeyboardStatus] = useState<Record<string, 'correct' | 'present' | 'absent' | null>>({});
   const [showAbout, setShowAbout] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  // Stats state
+  const [stats, setStats] = useState<{ currentStreak: number; gamesWon: number; averageScore: number } | null>(null);
+
+  // Fetch stats when stats view is shown
+  useEffect(() => {
+    if (showStats && did) {
+      fetch(`/api/stats?did=${did}`)
+        .then(res => res.json())
+        .then(data => setStats(data))
+        .catch(err => console.error('Failed to fetch stats:', err));
+    }
+  }, [showStats, did]);
 
   // Restore session on mount
   useEffect(() => {
@@ -398,7 +412,7 @@ const handleShare = async () => {
             
             {/* Mobile keyboard only on mobile */}
             <div className="mobile-keyboard-container">
-              <MobileKeyboard
+              <VirtualKeyboard
                 keyboardStatus={keyboardStatus}
                 onKey={handleVirtualKey}
                 onEnter={handleVirtualKeyEnter}
@@ -429,18 +443,29 @@ const handleShare = async () => {
             )}
           </div>
           <footer className="game-footer">
+            <button type="button" className="btn-glass btn-sm" onClick={() => setShowStats(true)}>Stats</button>
             <button type="button" className="btn-glass btn-sm" onClick={() => setShowAbout(true)}>About</button>
             <button type="button" className="btn-glass btn-sm" onClick={() => { localStorage.removeItem('skyrdleSession'); setDid(null); }}>Logout</button>
           </footer>
 
         {showAbout && (
-          <div className="modal-overlay" onClick={() => setShowAbout(false)}>
+          <AboutModal onClose={() => setShowAbout(false)} />
+        )}
+
+        {showStats && (
+          <div className="modal-overlay" onClick={() => setShowStats(false)}>
             <div className="modal-content" onClick={e => e.stopPropagation()}>
-              <h2>Skyrdle</h2>
-              <p>made with &lt;3 by <a href="https://smol.farm" target="_blank" rel="noopener noreferrer">smol farm</a></p>
-              <p><a href="https://bsky.app/profile/skyrdle.com" target="_blank" rel="noopener noreferrer">follow skyrdle on bluesky</a></p>
-              <p><a href="https://github.com/smolfarm/skyrdle-monorepo" target="_blank" rel="noopener noreferrer">view source on github</a></p>
-              <button className="btn-glass" onClick={() => setShowAbout(false)}>Close</button>
+              <h2>Stats</h2>
+              {stats ? (
+                <div className="stats">
+                  <p>Current Streak: {stats.currentStreak}</p>
+                  <p>Games Won: {stats.gamesWon}</p>
+                  <p>Average Score: {stats.averageScore.toFixed(2)}</p>
+                </div>
+              ) : (
+                <p>Loading...</p>
+              )}
+              <button className="btn-glass" onClick={() => setShowStats(false)}>Close</button>
             </div>
           </div>
         )}
