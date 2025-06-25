@@ -32,6 +32,7 @@ const App: React.FC = () => {
   // Track keyboard key statuses: correct, present, or absent
   const [keyboardStatus, setKeyboardStatus] = useState<Record<string, 'correct' | 'present' | 'absent' | null>>({});
   const [showAbout, setShowAbout] = useState(false);
+  const [showStats, setShowStats] = useState(false);
 
   // Restore session on mount
   useEffect(() => {
@@ -429,6 +430,7 @@ const handleShare = async () => {
             )}
           </div>
           <footer className="game-footer">
+            <button type="button" className="btn-glass btn-sm" onClick={() => setShowStats(true)}>Stats</button>
             <button type="button" className="btn-glass btn-sm" onClick={() => setShowAbout(true)}>About</button>
             <button type="button" className="btn-glass btn-sm" onClick={() => { localStorage.removeItem('skyrdleSession'); setDid(null); }}>Logout</button>
           </footer>
@@ -441,6 +443,16 @@ const handleShare = async () => {
               <p><a href="https://bsky.app/profile/skyrdle.com" target="_blank" rel="noopener noreferrer">follow skyrdle on bluesky</a></p>
               <p><a href="https://github.com/smolfarm/skyrdle-monorepo" target="_blank" rel="noopener noreferrer">view source on github</a></p>
               <button className="btn-glass" onClick={() => setShowAbout(false)}>Close</button>
+            </div>
+          </div>
+        )}
+
+        {showStats && (
+          <div className="modal-overlay" onClick={() => setShowStats(false)}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <h2>Stats</h2>
+              
+              <button className="btn-glass" onClick={() => setShowStats(false)}>Close</button>
             </div>
           </div>
         )}
