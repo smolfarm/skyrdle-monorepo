@@ -457,11 +457,11 @@ const handleShare = async () => {
             <div className="modal-content" onClick={e => e.stopPropagation()}>
               <h2>Stats</h2>
               {stats ? (
-                <div className="stats">
-                  <p>Current Streak: {stats.currentStreak}</p>
-                  <p>Games Won: {stats.gamesWon}</p>
-                  <p>Average Score: {stats.averageScore.toFixed(2)}</p>
-                </div>
+                <ul className="modal-list" style={{ listStyleType: 'none' }}>
+                  <li>🔥 Streak: {stats.currentStreak}</li>
+                  <li>🏆 Games Won: {stats.gamesWon}</li>
+                  <li>🎯 Average Score: {stats.averageScore.toFixed(2)}</li>
+                </ul>
               ) : (
                 <p>Loading...</p>
               )}
