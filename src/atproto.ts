@@ -23,7 +23,7 @@ const USER_SCORE_COLLECTION = 'farm.smol.games.skyrdle.score'
 export type ServerGuess = { letters: string[]; evaluation: ('correct'|'present'|'absent')[] }
 
 // AT Protocol agent, will be instantiated after resolving PDS
-export let agent: any;
+export let agent: any
 
 /**
  * Login with optional 2FA.
@@ -83,11 +83,11 @@ export async function login(
 
 // Helper to compute SHA-256 hash of a string
 async function computeHash(input: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(input);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  const encoder = new TextEncoder()
+  const data = encoder.encode(input)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
 // Save score to AT Protocol ledger
