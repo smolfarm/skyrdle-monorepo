@@ -187,7 +187,6 @@ app.post('/api/guess', async (req, res) => {
 
     if (!game) {
       // Game doesn't exist for this did and gameNumber, create it.
-      // This is allowed as per memory f24ef6cf-c98d-4359-86d5-a9ab7ceb03fa (for GET) and user request for playability.
       const targetWordForGame = wordList[(parsedGameNumber - 1) % wordList.length]
       game = new Game({
         did,
