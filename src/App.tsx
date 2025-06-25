@@ -15,6 +15,7 @@ import { login, saveScore, restoreSession, getScore, postSkeet, ServerGuess as A
 import VirtualKeyboard from './components/VirtualKeyboard'
 import AboutModal from './components/AboutModal'
 import logo from './logo.jpg'
+import Footer from './components/Footer'
 
 const WORD_LENGTH = 5
 
@@ -451,11 +452,7 @@ const handleShare = async () => {
               </div>
             )}
           </div>
-          <footer className="game-footer">
-            <button type="button" className="btn-glass btn-sm" onClick={() => setShowStats(true)}>Stats</button>
-            <button type="button" className="btn-glass btn-sm" onClick={() => setShowAbout(true)}>About</button>
-            <button type="button" className="btn-glass btn-sm" onClick={() => { localStorage.removeItem('skyrdleSession'); setDid(null); }}>Logout</button>
-          </footer>
+          <Footer onShowStats={() => setShowStats(true)} onShowAbout={() => setShowAbout(true)} onLogout={() => { localStorage.removeItem('skyrdleSession'); setDid(null); }} />
 
         {showAbout && (
           <AboutModal onClose={() => setShowAbout(false)} />
