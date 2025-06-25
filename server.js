@@ -48,7 +48,8 @@ const gameSchema = new mongoose.Schema({
   status: { type: String, enum: ['Playing', 'Won', 'Lost'], default: 'Playing' },
   gameNumber: { type: Number, required: true, index: true },
   scoreHash: { type: String },
-  syncedToAtproto: { type: Boolean, default: false }
+  syncedToAtproto: { type: Boolean, default: false },
+  completedAt: { type: Date }
 })
 
 // Compound index for did and gameNumber to ensure uniqueness per user per game
@@ -187,61 +188,66 @@ app.post('/api/guess', async (req, res) => {
     if (!game) {
       // Game doesn't exist for this did and gameNumber, create it.
       // This is allowed as per memory f24ef6cf-c98d-4359-86d5-a9ab7ceb03fa (for GET) and user request for playability.
-      const targetWordForGame = wordList[(parsedGameNumber - 1) % wordList.length];
+      const targetWordForGame = wordList[(parsedGameNumber - 1) % wordList.length]
       game = new Game({
         did,
         targetWord: targetWordForGame,
         guesses: [],
         status: 'Playing',
         gameNumber: parsedGameNumber
-      });
+      })
+
       // Game will be saved after guess processing
     }
 
     if (game.status !== 'Playing') return res.status(400).json({ error: 'Game is already over (Won or Lost)' });
 
     // Evaluate guess with duplicate handling
-    const guessChars = guess.toUpperCase().split('');
-    const targetChars = game.targetWord.toUpperCase().split('');
-    const evals = Array(guessChars.length).fill(null);
+    const guessChars = guess.toUpperCase().split('')
+    const targetChars = game.targetWord.toUpperCase().split('')
+    const evals = Array(guessChars.length).fill(null)
+    
     // First pass: correct positions
     for (let i = 0; i < guessChars.length; i++) {
       if (guessChars[i] === targetChars[i]) {
-        evals[i] = 'correct';
-        targetChars[i] = null;
+        evals[i] = 'correct'
+        targetChars[i] = null
       }
     }
     // Second pass: present or absent
     for (let i = 0; i < guessChars.length; i++) {
-      if (evals[i]) continue;
-      const idx = targetChars.indexOf(guessChars[i]);
+      if (evals[i]) continue
+      const idx = targetChars.indexOf(guessChars[i])
       if (idx !== -1) {
-        evals[i] = 'present';
-        targetChars[idx] = null;
+        evals[i] = 'present'
+        targetChars[idx] = null
       } else {
-        evals[i] = 'absent';
+        evals[i] = 'absent'
       }
     }
 
     game.guesses.push({ letters: guess.toUpperCase().split(''), evaluation: evals });
 
-    // Update status
-    if (evals.every(e => e === 'correct')) game.status = 'Won';
-    else if (game.guesses.length >= 6) game.status = 'Lost';
-
-    await game.save();
+    if (evals.every(e => e === 'correct')) {
+      game.status = 'Won'
+      game.completedAt = new Date()
+    } else if (game.guesses.length >= 6) {
+      game.status = 'Lost'
+      game.completedAt = new Date()
+    }
+    await game.save()
 
     if (game.status !== 'Playing') {
-      const scoreVal = game.status === 'Won' ? game.guesses.length : -1;
-      const hash = crypto.createHash('sha256').update(`${did}|${parsedGameNumber}|${scoreVal}`).digest('hex');
-      game.scoreHash = hash;
-      await game.save();
+      const scoreVal = game.status === 'Won' ? game.guesses.length : -1
+      const hash = crypto.createHash('sha256').update(`${did}|${parsedGameNumber}|${scoreVal}`).digest('hex')
+      game.scoreHash = hash
+      await game.save()
     }
 
-    res.json({ guesses: game.guesses, status: game.status, gameNumber: game.gameNumber });
+    res.json({ guesses: game.guesses, status: game.status, gameNumber: game.gameNumber })
   } catch (error) {
-    console.error('Error processing guess:', error);
-    res.status(500).json({ error: 'Failed to process guess' });
+    console.error('Error processing guess:', error)
+    res.status(500).json({ error: 'Failed to process guess' })
   }
 });
 
