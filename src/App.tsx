@@ -17,7 +17,6 @@ import AboutModal from './components/AboutModal'
 import logo from './logo.jpg'
 import Footer from './components/Footer'
 import ShareResults from './components/ShareResults'
-import Swal from 'sweetalert2'
 
 const WORD_LENGTH = 5
 
@@ -189,20 +188,10 @@ const handleShare = async () => {
   if (navigator.clipboard && shareText) {
     try {
       await navigator.clipboard.writeText(shareText)
-      Swal.fire({
-        title: 'Success!',
-        text: 'Results copied to clipboard!',
-        icon: 'success',
-        confirmButtonText: 'OK'
-      })
+      alert('Results copied to clipboard!')
     } catch (err) {
       console.error('Failed to copy: ', err);
-      Swal.fire({
-        title: 'Error!',
-        text: 'Failed to copy results: ' + (err.message || 'Unknown error'),
-        icon: 'error',
-        confirmButtonText: 'OK'
-      })
+      alert('Failed to copy results.')
     }
   }
 };
@@ -211,22 +200,11 @@ const handleShare = async () => {
     if (!shareText || !did) return;
     setIsPostingSkeet(true);
     try {
-      await postSkeet(shareText)
-
-      Swal.fire({
-        title: 'Success!',
-        text: 'Results posted to Bluesky!',
-        icon: 'success',
-        confirmButtonText: 'OK'
-      })
+      await postSkeet(shareText);
+      alert('Results posted to Bluesky!');
     } catch (error: any) {
       console.error('Failed to post skeet:', error);
-      Swal.fire({
-        title: 'Error!',
-        text: 'Failed to post results: ' + (error.message || 'Unknown error'),
-        icon: 'error',
-        confirmButtonText: 'OK'
-      })
+      alert('Failed to post results: ' + (error.message || 'Unknown error'));
     } finally {
       setIsPostingSkeet(false);
     }
