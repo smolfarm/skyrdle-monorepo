@@ -1,15 +1,15 @@
-import { ChangeEvent } from 'react';
+import { ChangeEvent } from 'react'
 import logo from '../logo.jpg'
 
 type LoginFormProps = {
-    identifier: string;
-    password: string;
-    requires2FA: boolean;
-    twoFactorCode: string;
-    onLoginAttempt: () => void;
-    onIdentifierChange: (identifier: string) => void;
-    onPasswordChange: (password: string) => void;
-    onTwoFactorCodeChange: (twoFactorCode: string) => void;
+    identifier: string
+    password: string
+    requires2FA: boolean
+    twoFactorCode: string
+    onLoginAttempt: () => void
+    onIdentifierChange: (identifier: string) => void
+    onPasswordChange: (password: string) => void
+    onTwoFactorCodeChange: (twoFactorCode: string) => void
 }
 
 export default function LoginForm({ identifier, password, requires2FA, twoFactorCode, onLoginAttempt, onIdentifierChange, onPasswordChange, onTwoFactorCodeChange }: LoginFormProps) {

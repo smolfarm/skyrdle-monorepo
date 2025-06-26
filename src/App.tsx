@@ -438,13 +438,13 @@ const handleShare = async () => {
             </div>
 
             {status === GameStatus.Won && (
-              <div className="message">
+              <div className="message" style={{ marginTop: '2rem', marginBottom: '2rem'}}>
                 Congrats! You won! Score saved!
               </div>
             )}
 
             {status === GameStatus.Lost && (
-              <div className="message">
+              <div className="message" style={{ marginTop: '2rem', marginBottom: '2rem'}}>
                 Game Over. Score saved.
               </div>
             )}
