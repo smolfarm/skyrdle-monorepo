@@ -30,18 +30,18 @@ async function updateStats() {
 
     for (const game of games) {
       if (game.status === 'Won') {
-        gamesWon++;
-        winCount++;
-        totalGuesses += game.guesses.length;
-        streak++;
-        maxStreak = Math.max(maxStreak, streak);
+        gamesWon++
+        winCount++
+        totalGuesses += game.guesses.length
+        streak++
+        maxStreak = Math.max(maxStreak, streak)
       } else if (game.status === 'Lost') {
-        gamesLost++;
-        streak = 0;
+        gamesLost++
+        streak = 0
       }
     }
 
-    const currentStreak = streak;
+    const currentStreak = streak
     const avgScore = winCount > 0 ? totalGuesses / winCount : 0;
 
     await Player.findOneAndUpdate(
