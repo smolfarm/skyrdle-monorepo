@@ -16,7 +16,7 @@ app.use(express.static(path.join(__dirname, 'dist')))
 
 const port = process.env.PORT || 4000
 
-const { Word, Game, Player } = require('./models')
+const { Word, Game, Player } = require('./src/models')
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -58,13 +58,13 @@ async function getGame(did) {
       guesses: [],
       status: 'Playing',
       gameNumber: currentGameNumber
-    });
-    await game.save();
+    })
+    await game.save()
   }
   // If a game exists for today, it's already up-to-date, or it's an old game (which this function doesn't handle)
   // The old logic for updating an existing game record to the current day is removed
   // because we now store each day's game as a separate document due to the compound index.
-  return game;
+  return game
 }
 
 /**
@@ -81,7 +81,7 @@ app.get('/api/game', async (req, res) => {
     console.error('Error fetching game state:', error);
     res.status(500).json({ error: 'Failed to fetch game state' });
   }
-});
+})
 
 /**
  * GET specific past game state
@@ -130,7 +130,7 @@ app.get('/api/game/:gameNumber', async (req, res) => {
     console.error('Error fetching or creating specific game state:', error);
     res.status(500).json({ error: 'Failed to fetch or create specific game state' });
   }
-});
+})
 
 /**
  * POST a new guess
@@ -222,7 +222,7 @@ app.post('/api/guess', async (req, res) => {
     console.error('Error processing guess:', error)
     res.status(500).json({ error: 'Failed to process guess' })
   }
-});
+})
 
 // All other GET requests not handled before will return the React app
 // Stats endpoint
