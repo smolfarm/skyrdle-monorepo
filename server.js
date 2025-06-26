@@ -16,7 +16,7 @@ app.use(express.static(path.join(__dirname, 'dist')))
 
 const port = process.env.PORT || 4000
 
-const [Word, Game, Player] = require('./models');
+const { Word, Game, Player } = require('./models')
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -374,5 +374,5 @@ app.listen(port, () => {
     updateWordStats()
     console.log('Running initial player stats update...')
     updatePlayerStats()
-  }, 5000)
+  }, 2000)
 })

@@ -11,9 +11,9 @@
 
 require('dotenv').config()
 const mongoose = require('mongoose')
-const [Word, Game] = require('../models')
+const { Game, Word } = require('../models')
 
-async function updateStats(gameModel, wordModel) {
+async function updateStats() {
   await mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
   console.log('MongoDB connected for stats update');
 
