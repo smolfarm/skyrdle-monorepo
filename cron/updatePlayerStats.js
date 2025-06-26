@@ -25,6 +25,8 @@ async function updateStats() {
     let gamesLost = 0
     let totalGuesses = 0
     let winCount = 0
+    let currentStreak = 0
+    let currentStreakBroken = false
     let streak = 0
     let maxStreak = 0
 
@@ -35,14 +37,16 @@ async function updateStats() {
         totalGuesses += game.guesses.length
         streak++
         maxStreak = Math.max(maxStreak, streak)
+
+        if (!currentStreakBroken) currentStreak++
       } else if (game.status === 'Lost') {
         gamesLost++
         streak = 0
+        currentStreakBroken = true
       }
     }
 
-    const currentStreak = streak
-    const avgScore = winCount > 0 ? totalGuesses / winCount : 0;
+    const avgScore = winCount > 0 ? totalGuesses / winCount : 0
 
     await Player.findOneAndUpdate(
       { did },
