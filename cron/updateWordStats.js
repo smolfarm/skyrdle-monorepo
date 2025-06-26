@@ -26,8 +26,8 @@ async function updateStats(gameModel, wordModel) {
     console.log(`Game ${gameNumber}: won=${gamesWon}, lost=${gamesLost}, avgScore=${avgScore}`)
   }
 
-  await mongoose.disconnect()
-  console.log('Stats update complete and disconnected')
+  
+  console.log('Stats update complete')
 }
 
 module.exports = {
