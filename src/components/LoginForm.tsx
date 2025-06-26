@@ -18,22 +18,22 @@ export default function LoginForm({ identifier, password, requires2FA, twoFactor
             <img src={logo} alt="Skyrdle Logo" className="login-logo" />
             <h2>Login to Skyrdle</h2>
             <input
-            placeholder="Bluesky Username or Email"
-            value={identifier}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => onIdentifierChange(e.target.value)}
+                placeholder="Bluesky Username or Email"
+                value={identifier}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => onIdentifierChange(e.target.value)}
             />
             <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => onPasswordChange(e.target.value)}
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => onPasswordChange(e.target.value)}
             />
             {requires2FA && (
-            <input
-                placeholder="2FA Code"
-                value={twoFactorCode}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => onTwoFactorCodeChange(e.target.value)}
-            />
+                <input
+                    placeholder="2FA Code"
+                    value={twoFactorCode}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => onTwoFactorCodeChange(e.target.value)}
+                />
             )}
             <button onClick={onLoginAttempt} className="btn-glass">Login</button>
 
