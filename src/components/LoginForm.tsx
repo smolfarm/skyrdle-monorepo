@@ -36,6 +36,17 @@ export default function LoginForm({ identifier, password, requires2FA, twoFactor
             />
             )}
             <button onClick={onLoginAttempt} className="btn-glass">Login</button>
+
+            <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+                <a
+                    href="https://smol.life/profile/did:plc:jylenhzj4u2te27qmcrdjtoh"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', color: '#1DA1F2' }}
+                >
+                Follow us on Bluesky
+                </a>
+            </div>
         </div>
     )
 }
