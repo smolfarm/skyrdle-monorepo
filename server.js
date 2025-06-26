@@ -18,8 +18,6 @@ const port = process.env.PORT || 4000
 
 const [Word, Game] = require('./models');
 
-
-
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(async () => {
@@ -33,9 +31,6 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
     }
   })
   .catch(err => console.error('MongoDB connection error:', err))
-
-
-
 
 // Epoch at June 13th, 2025 midnight Eastern (UTC-5)
 // This marks Game #1
@@ -337,21 +332,25 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'))
 })
 
-// Initialize the AT Protocol sync service
-const syncService = require('./cron/syncMongoToAtproto')
-const syncMongoToAtproto = syncService.initSync(Game)
+// cron
+const syncMongoToAtprotoService = require('./cron/syncMongoToAtproto')
+const syncMongoToAtproto = syncMongoToAtprotoService.initSync(Game)
+const updateWordStatsService = require('./cron/updateWordStats')
+const updateWordStats = updateWordStatsService.initJob(Game, Word)
 
 // Set up interval for periodic sync
-const SYNC_INTERVAL_MS = syncService.SYNC_INTERVAL_MS
+const SYNC_INTERVAL_MS = syncMongoToAtprotoService.SYNC_INTERVAL_MS
 setInterval(syncMongoToAtproto, SYNC_INTERVAL_MS)
+setInterval(updateWordStats, SYNC_INTERVAL_MS)
 
 // Run initial sync after server starts
 app.listen(port, () => {
   console.log(`Skyrdle API listening on http://localhost:${port}`)
-  
-  // Run initial sync after a short delay to ensure MongoDB connection is established
+
   setTimeout(() => {
     console.log('Running initial MongoDB to AT Protocol sync...')
     syncMongoToAtproto()
+    console.log('Running initial word stats update...')
+    updateWordStats()
   }, 5000)
 })

@@ -32,7 +32,7 @@ async function authenticateWithAtproto() {
     const res = await agent.api.com.atproto.server.createSession({
       identifier: process.env.ATPROTO_SERVER_HANDLE,
       password: process.env.ATPROTO_SERVER_APP_PASSWORD
-    });
+    })
     
     // Set the session on the agent
     agent.session = {
@@ -41,7 +41,7 @@ async function authenticateWithAtproto() {
       handle: res.data.handle,
       did: res.data.did,
       email: res.data.email
-    };
+    }
     
     console.log(`Successfully authenticated as ${res.data.handle} (${res.data.did})`)
     return true
@@ -69,12 +69,6 @@ async function saveScoreToAtproto(did, gameNumber, score, guesses) {
         throw new Error('Failed to authenticate with AT Protocol');
       }
     }
-    
-    // Format guesses to match the expected structure
-    const formattedGuesses = guesses.map(g => ({
-      letters: g.letters,
-      evaluation: g.evaluation
-    }))
     
     console.log(`Saving score for ${did}, game ${gameNumber}: ${score}`)
     
