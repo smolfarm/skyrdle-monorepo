@@ -350,11 +350,11 @@ app.get('*', (req, res) => {
 })
 
 // cron
-const syncMongoToAtprotoService = require('./cron/syncMongoToAtproto')
+const syncMongoToAtprotoService = require('./src/cron/syncMongoToAtproto')
 const syncMongoToAtproto = syncMongoToAtprotoService.initSync(Game)
-const updateWordStatsService = require('./cron/updateWordStats')
+const updateWordStatsService = require('./src/cron/updateWordStats')
 const updateWordStats = updateWordStatsService.initJob(Game, Word)
-const updatePlayerStatsService = require('./cron/updatePlayerStats')
+const updatePlayerStatsService = require('./src/cron/updatePlayerStats')
 const updatePlayerStats = updatePlayerStatsService.initJob(Game, Player)
 
 // Set up interval for periodic sync
