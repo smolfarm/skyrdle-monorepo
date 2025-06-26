@@ -13,7 +13,7 @@ const mongoose = require('mongoose')
 
 const playerSchema = new mongoose.Schema({
   did: { type: String, required: true, index: true },
-  handle: String,
+  handle: { type: String },
 
   gamesWon: { type: Number, default: 0 },
   gamesLost: { type: Number, default: 0 },
@@ -24,7 +24,5 @@ const playerSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 })
-
-playerSchema.index({ did: 1 }, { unique: true })
 
 module.exports = mongoose.model('Player', playerSchema)

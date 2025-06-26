@@ -16,7 +16,7 @@ app.use(express.static(path.join(__dirname, 'dist')))
 
 const port = process.env.PORT || 4000
 
-const [Word, Game] = require('./models');
+const [Word, Game, Player] = require('./models');
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -354,11 +354,14 @@ const syncMongoToAtprotoService = require('./cron/syncMongoToAtproto')
 const syncMongoToAtproto = syncMongoToAtprotoService.initSync(Game)
 const updateWordStatsService = require('./cron/updateWordStats')
 const updateWordStats = updateWordStatsService.initJob(Game, Word)
+const updatePlayerStatsService = require('./cron/updatePlayerStats')
+const updatePlayerStats = updatePlayerStatsService.initJob(Game, Player)
 
 // Set up interval for periodic sync
 const SYNC_INTERVAL_MS = syncMongoToAtprotoService.SYNC_INTERVAL_MS
 setInterval(syncMongoToAtproto, SYNC_INTERVAL_MS)
 setInterval(updateWordStats, SYNC_INTERVAL_MS)
+setInterval(updatePlayerStats, SYNC_INTERVAL_MS)
 
 // Run initial sync after server starts
 app.listen(port, () => {
@@ -369,5 +372,7 @@ app.listen(port, () => {
     syncMongoToAtproto()
     console.log('Running initial word stats update...')
     updateWordStats()
+    console.log('Running initial player stats update...')
+    updatePlayerStats()
   }, 5000)
 })
