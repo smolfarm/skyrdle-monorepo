@@ -302,7 +302,7 @@ app.post('/api/auth/logout', async (req, res) => {
 })
 
 const api = require('./src/api')
-api(app, Game, Word)
+api(app, Game, Word, Player)
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'))

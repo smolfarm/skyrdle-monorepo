@@ -1,6 +1,24 @@
 
 
-function api(app, Game, Word) {
+function api(app, Game, Word, Player) {
+    /**
+     * Get the leaderboard
+     */
+    app.get('/api/leaderboard', async (req, res) => {
+      console.log('Fetching leaderboard')
+
+      const players = await Player.find().sort({ currentStreak: -1 })
+
+      const data = players.map(player => ({
+        did: player.did,
+        currentStreak: player.currentStreak,
+        gamesWon: player.gamesWon,
+        averageScore: player.averageScore
+      }))
+      
+      res.json(data)
+    })
+
     /**
      * Get a player's stats
      * @param {string} did - The player's DID
