@@ -17,6 +17,7 @@ import AboutModal from './components/AboutModal'
 import logo from './logo.jpg'
 import Footer from './components/Footer'
 import ShareResults from './components/ShareResults'
+import Swal from 'sweetalert2'
 
 const WORD_LENGTH = 5
 
@@ -201,10 +202,20 @@ const handleShare = async () => {
     setIsPostingSkeet(true);
     try {
       await postSkeet(shareText);
-      alert('Results posted to Bluesky!');
+      Swal.fire({
+        title: 'Success!',
+        text: 'Results posted to Bluesky!',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      })
     } catch (error: any) {
       console.error('Failed to post skeet:', error);
-      alert('Failed to post results: ' + (error.message || 'Unknown error'));
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to post results: ' + (error.message || 'Unknown error'),
+        icon: 'error',
+        confirmButtonText: 'OK'
+      })
     } finally {
       setIsPostingSkeet(false);
     }
