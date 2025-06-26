@@ -42,11 +42,9 @@ const App: React.FC = () => {
   const [shareText, setShareText] = useState('');
   const [isPostingSkeet, setIsPostingSkeet] = useState(false)
   const [existingScore, setExistingScore] = useState<number | null | undefined>(undefined)
-  // Track keyboard key statuses: correct, present, or absent
   const [keyboardStatus, setKeyboardStatus] = useState<Record<string, 'correct' | 'present' | 'absent' | null>>({})
   const [showAbout, setShowAbout] = useState(false)
   const [showStats, setShowStats] = useState(false)
-  // Stats state
   const [stats, setStats] = useState<{ currentStreak: number; gamesWon: number; averageScore: number } | null>(null)
 
   // Fetch stats when stats view is shown
