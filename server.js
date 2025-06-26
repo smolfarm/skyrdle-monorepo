@@ -16,7 +16,7 @@ app.use(express.static(path.join(__dirname, 'dist')))
 
 const port = process.env.PORT || 4000
 
-const [Word, Game] = require('./models');
+const { Word, Game, Player } = require('./models')
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -251,6 +251,23 @@ app.get('/api/stats', async (req, res) => {
   }
 })
 
+app.get('/api/game/:gameNumber/stats', async (req, res) => {
+  const { gameNumber } = req.params
+  if (!gameNumber) return res.status(400).json({ error: 'Missing gameNumber' })
+  try {
+    const game = await Word.findOne({ gameNumber })
+    if (!game) return res.status(404).json({ error: 'Word not found' })
+    res.json({
+      gamesWon: game.gamesWon,
+      gamesLost: game.gamesLost,
+      avgScore: game.avgScore
+    })
+  } catch (err) {
+    console.error('Error fetching game stats:', err);
+    res.status(500).json({ error: 'Failed to fetch game stats' });
+  }
+})
+
 app.post('/api/auth/signin', async (req, res) => {
   try {
       const { handle } = await req.json()
@@ -337,11 +354,14 @@ const syncMongoToAtprotoService = require('./cron/syncMongoToAtproto')
 const syncMongoToAtproto = syncMongoToAtprotoService.initSync(Game)
 const updateWordStatsService = require('./cron/updateWordStats')
 const updateWordStats = updateWordStatsService.initJob(Game, Word)
+const updatePlayerStatsService = require('./cron/updatePlayerStats')
+const updatePlayerStats = updatePlayerStatsService.initJob(Game, Player)
 
 // Set up interval for periodic sync
 const SYNC_INTERVAL_MS = syncMongoToAtprotoService.SYNC_INTERVAL_MS
 setInterval(syncMongoToAtproto, SYNC_INTERVAL_MS)
 setInterval(updateWordStats, SYNC_INTERVAL_MS)
+setInterval(updatePlayerStats, SYNC_INTERVAL_MS)
 
 // Run initial sync after server starts
 app.listen(port, () => {
@@ -352,5 +372,7 @@ app.listen(port, () => {
     syncMongoToAtproto()
     console.log('Running initial word stats update...')
     updateWordStats()
-  }, 5000)
+    console.log('Running initial player stats update...')
+    updatePlayerStats()
+  }, 2000)
 })

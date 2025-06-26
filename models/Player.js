@@ -6,20 +6,23 @@
 * /\__/ / |\  \ | | | |\ \| |/ /| |___| |___ 
 * \____/\_| \_/ \_/ \_| \_|___/ \_____|____/ 
 *                                           
-* Mongo model for word data.                                     
+* Mongo model for player data.                                     
 */
 
 const mongoose = require('mongoose')
 
-const wordSchema = new mongoose.Schema({
-  gameNumber: { type: Number, required: true },
-  word: { type: String, required: true },
+const playerSchema = new mongoose.Schema({
+  did: { type: String, required: true, index: true },
+  handle: { type: String },
 
   gamesWon: { type: Number, default: 0 },
   gamesLost: { type: Number, default: 0 },
   avgScore: { type: Number, default: 0 },
+  currentStreak: { type: Number, default: 0 },
+  maxStreak: { type: Number, default: 0 },
+
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 })
 
-wordSchema.index({ gameNumber: 1 }, { unique: true })
-
-module.exports = mongoose.model('Word', wordSchema, 'words')
+module.exports = mongoose.model('Player', playerSchema)
