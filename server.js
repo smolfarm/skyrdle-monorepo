@@ -251,6 +251,23 @@ app.get('/api/stats', async (req, res) => {
   }
 })
 
+app.get('/api/game/:gameNumber/stats', async (req, res) => {
+  const { gameNumber } = req.params
+  if (!gameNumber) return res.status(400).json({ error: 'Missing gameNumber' })
+  try {
+    const game = await Word.findOne({ gameNumber })
+    if (!game) return res.status(404).json({ error: 'Word not found' })
+    res.json({
+      gamesWon: game.gamesWon,
+      gamesLost: game.gamesLost,
+      avgScore: game.avgScore
+    })
+  } catch (err) {
+    console.error('Error fetching game stats:', err);
+    res.status(500).json({ error: 'Failed to fetch game stats' });
+  }
+})
+
 app.post('/api/auth/signin', async (req, res) => {
   try {
       const { handle } = await req.json()
