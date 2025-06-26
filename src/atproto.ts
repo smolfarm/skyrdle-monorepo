@@ -1,5 +1,16 @@
-import { AtpAgent } from '@atproto/api';
-import { XRPCError } from '@atproto/xrpc';
+/*
+*  _____ _   ___   _____________ _     _____ 
+* /  ___| | / | \ / / ___ \  _  \ |   |  ___|
+* \ `--.| |/ / \ V /| |_/ / | | | |   | |__  
+*  `--. \    \  \ / |    /| | | | |   |  __| 
+* /\__/ / |\  \ | | | |\ \| |/ /| |___| |___ 
+* \____/\_| \_/ \_/ \_| \_|___/ \_____|____/ 
+*                                           
+* AT Protocol integration for Skyrdle.                                     
+*/
+
+import { AtpAgent } from '@atproto/api'
+import { XRPCError } from '@atproto/xrpc'
 
 // Resolve user handle to DID
 async function resolveHandle(handle: string): Promise<string> {
