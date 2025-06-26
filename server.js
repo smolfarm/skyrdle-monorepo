@@ -5,6 +5,7 @@ require('dotenv').config()
 const crypto = require('crypto')
 let wordList = []
 const path = require('path')
+const { OAuthSession } = require('@atproto/oauth-client-node')
 
 const app = express()
 app.use(cors())
@@ -15,11 +16,7 @@ app.use(express.static(path.join(__dirname, 'dist')))
 
 const port = process.env.PORT || 4000
 
-const wordSchema = new mongoose.Schema({ 
-  gameNumber: { type: Number, required: true },
-  word: { type: String, required: true } 
-})
-const Word = mongoose.model('Word', wordSchema, 'words')
+const [Word, Game] = require('./models');
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -34,29 +31,6 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
     }
   })
   .catch(err => console.error('MongoDB connection error:', err))
-
-// Mongoose Schema for Game State
-const guessSchema = new mongoose.Schema({
-  letters: [String],
-  evaluation: [String]
-}, { _id: false })
-
-const gameSchema = new mongoose.Schema({
-  did: { type: String, required: true, index: true },
-  targetWord: { type: String, required: true },
-  guesses: [guessSchema],
-  status: { type: String, enum: ['Playing', 'Won', 'Lost'], default: 'Playing' },
-  gameNumber: { type: Number, required: true, index: true },
-  scoreHash: { type: String },
-  syncedToAtproto: { type: Boolean, default: false },
-  completedAt: { type: Date }
-})
-
-// Compound index for did and gameNumber to ensure uniqueness per user per game
-gameSchema.index({ did: 1, gameNumber: 1 }, { unique: true })
-
-const Game = mongoose.model('Game', gameSchema)
-
 
 // Epoch at June 13th, 2025 midnight Eastern (UTC-5)
 // This marks Game #1
@@ -277,25 +251,106 @@ app.get('/api/stats', async (req, res) => {
   }
 })
 
+app.post('/api/auth/signin', async (req, res) => {
+  try {
+      const { handle } = await req.json()
+      const state = crypto.randomUUID()
+      const url = await client.authorize(handle, { state })
+      return res.json({ url })
+  } catch (err) {
+      console.error('Signin error', err)
+      return res.json({ error: 'Authentication failed' }, 400)
+  }
+})
+
+app.get('/api/auth/callback', async (req, res) => {
+  try {
+      const params = new URL(req.url).searchParams
+      const result = await client.callback(params)
+      if (!result?.session) {
+          return res.json({ error: 'Authentication failed' }, 400)
+      }
+      const token = createSignedToken(result.session.sub)
+      const cookie = serializeCookie(COOKIE_NAME, token, { maxAge: 60 * 60 * 24 * 7 })
+      const res = res.redirect(config.domain, 302)
+      res.headers.set('Set-Cookie', cookie)
+      return res
+  } catch (err) {
+      console.error('Callback error', err)
+      return res.json({ error: 'Authentication failed' }, 400)
+  }
+})
+
+app.get('/api/auth/status', async (req, res) => {
+  try {
+      const cookies = parseCookies(req.header('Cookie'))
+      const token = cookies[COOKIE_NAME]
+      const sub = token ? verifySignedToken(token) : null
+      if (!sub) return res.json({ authenticated: false })
+
+      let oauthSession;
+      try {
+          oauthSession = await client.restore(sub, 'auto');
+      } catch (_) {
+      }
+
+      if (!oauthSession) {
+          const stored = await sessionStore.get(sub)
+          if (!stored) {
+              const res = c.json({ authenticated: false })
+              res.headers.set('Set-Cookie', deleteCookie(COOKIE_NAME))
+              return res
+          }
+          return c.json({ authenticated: true, user: { sub } })
+      }
+
+      return c.json({ authenticated: true, user: { sub, pds: oauthSession.serverMetadata.issuer } })
+  } catch (err) {
+      console.error('Status check error', err)
+      return c.json({ authenticated: false })
+  }
+})
+
+app.post('/api/auth/logout', async (req, res) => {
+  try {
+      const cookies = parseCookies(req.header('Cookie'))
+      const token = cookies[COOKIE_NAME]
+      const sub = token ? verifySignedToken(token) : null
+      if (sub) {
+          await sessionStore.del(sub)
+      }
+      res.json({ success: true })
+      res.set('Set-Cookie', deleteCookie(COOKIE_NAME))
+      return res
+  } catch (err) {
+      console.error('Logout error', err)
+      return res.json({ error: 'Logout failed' }, 500)
+  }
+})
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'))
 })
 
-// Initialize the AT Protocol sync service
-const syncService = require('./cron/syncMongoToAtproto')
-const syncMongoToAtproto = syncService.initSync(Game)
+// cron
+const syncMongoToAtprotoService = require('./cron/syncMongoToAtproto')
+const syncMongoToAtproto = syncMongoToAtprotoService.initSync(Game)
+const updateWordStatsService = require('./cron/updateWordStats')
+const updateWordStats = updateWordStatsService.initJob(Game, Word)
 
 // Set up interval for periodic sync
-const SYNC_INTERVAL_MS = syncService.SYNC_INTERVAL_MS
+const SYNC_INTERVAL_MS = syncMongoToAtprotoService.SYNC_INTERVAL_MS
 setInterval(syncMongoToAtproto, SYNC_INTERVAL_MS)
+setInterval(updateWordStats, SYNC_INTERVAL_MS)
 
 // Run initial sync after server starts
 app.listen(port, () => {
   console.log(`Skyrdle API listening on http://localhost:${port}`)
-  
-  // Run initial sync after a short delay to ensure MongoDB connection is established
+
   setTimeout(() => {
     console.log('Running initial MongoDB to AT Protocol sync...')
     syncMongoToAtproto()
+    console.log('Running initial word stats update...')
+    updateWordStats()
   }, 5000)
 })

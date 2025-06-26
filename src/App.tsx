@@ -1,13 +1,24 @@
+/*
+*  _____ _   ___   _____________ _     _____ 
+* /  ___| | / | \ / / ___ \  _  \ |   |  ___|
+* \ `--.| |/ / \ V /| |_/ / | | | |   | |__  
+*  `--. \    \  \ / |    /| | | | |   |  __| 
+* /\__/ / |\  \ | | | |\ \| |/ /| |___| |___ 
+* \____/\_| \_/ \_/ \_| \_|___/ \_____|____/ 
+*                                           
+* Root React component for Skyrdle.                                          
+*/
+
 import React, { useState, useEffect, KeyboardEvent, ChangeEvent } from 'react'
 import { ServerGuess } from './atproto'
 import { login, saveScore, restoreSession, getScore, postSkeet, ServerGuess as AtProtoServerGuess } from './atproto'
 import VirtualKeyboard from './components/VirtualKeyboard'
 import AboutModal from './components/AboutModal'
 import logo from './logo.jpg'
+import Footer from './components/Footer'
+import ShareResults from './components/ShareResults'
 
 const WORD_LENGTH = 5
-
-type Guess = string[];
 
 enum GameStatus {
   Playing,
@@ -28,14 +39,14 @@ const App: React.FC = () => {
   const [requires2FA, setRequires2FA] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [shareText, setShareText] = useState('');
-  const [isPostingSkeet, setIsPostingSkeet] = useState(false);
-  const [existingScore, setExistingScore] = useState<number | null | undefined>(undefined);
+  const [isPostingSkeet, setIsPostingSkeet] = useState(false)
+  const [existingScore, setExistingScore] = useState<number | null | undefined>(undefined)
   // Track keyboard key statuses: correct, present, or absent
-  const [keyboardStatus, setKeyboardStatus] = useState<Record<string, 'correct' | 'present' | 'absent' | null>>({});
-  const [showAbout, setShowAbout] = useState(false);
-  const [showStats, setShowStats] = useState(false);
+  const [keyboardStatus, setKeyboardStatus] = useState<Record<string, 'correct' | 'present' | 'absent' | null>>({})
+  const [showAbout, setShowAbout] = useState(false)
+  const [showStats, setShowStats] = useState(false)
   // Stats state
-  const [stats, setStats] = useState<{ currentStreak: number; gamesWon: number; averageScore: number } | null>(null);
+  const [stats, setStats] = useState<{ currentStreak: number; gamesWon: number; averageScore: number } | null>(null)
 
   // Fetch stats when stats view is shown
   useEffect(() => {
@@ -45,25 +56,25 @@ const App: React.FC = () => {
         .then(data => setStats(data))
         .catch(err => console.error('Failed to fetch stats:', err));
     }
-  }, [showStats, did]);
+  }, [showStats, did])
 
   // Restore session on mount
   useEffect(() => {
     (async () => {
-      const storedDid = await restoreSession();
-      if (storedDid) setDid(storedDid);
-    })();
-  }, []);
+      const storedDid = await restoreSession()
+      if (storedDid) setDid(storedDid)
+    })()
+  }, [])
   
   // Calculate keyboard key statuses with priority: correct > present > default > absent
   const calculateKeyboardStatus = (currentGuesses: ServerGuess[]) => {
-    const newKeyboardStatus: Record<string, 'correct' | 'present' | 'absent' | null> = {};
+    const newKeyboardStatus: Record<string, 'correct' | 'present' | 'absent' | null> = {}
     
     // Process all guesses to determine the status of each letter
     currentGuesses.forEach(({ letters, evaluation }) => {
       letters.forEach((letter, i) => {
-        const currentStatus = newKeyboardStatus[letter];
-        const newStatus = evaluation[i];
+        const currentStatus = newKeyboardStatus[letter]
+        const newStatus = evaluation[i]
         
         // Apply priority rules: correct > present > default > absent
         if (newStatus === 'correct') {
@@ -71,15 +82,15 @@ const App: React.FC = () => {
           newKeyboardStatus[letter] = 'correct';
         } else if (newStatus === 'present' && currentStatus !== 'correct') {
           // Present takes priority unless the letter is already marked correct
-          newKeyboardStatus[letter] = 'present';
+          newKeyboardStatus[letter] = 'present'
         } else if (newStatus === 'absent' && currentStatus !== 'correct' && currentStatus !== 'present') {
           // Absent only applies if the letter isn't already marked correct or present
-          newKeyboardStatus[letter] = 'absent';
+          newKeyboardStatus[letter] = 'absent'
         }
-      });
-    });
+      })
+    })
     
-    setKeyboardStatus(newKeyboardStatus);
+    setKeyboardStatus(newKeyboardStatus)
   };
 
   /*
@@ -100,8 +111,8 @@ const App: React.FC = () => {
         setShareText('')
         calculateKeyboardStatus(newGuesses)
       })
-      .catch(console.error);
-  };
+      .catch(console.error)
+  }
 
   /*
    * Pull a specific game's state for the user.
@@ -176,11 +187,11 @@ const generateEmojiGrid = (gameNum: number | null, gameGuesses: AtProtoServerGue
 const handleShare = async () => {
   if (navigator.clipboard && shareText) {
     try {
-      await navigator.clipboard.writeText(shareText);
-      alert('Results copied to clipboard!');
+      await navigator.clipboard.writeText(shareText)
+      alert('Results copied to clipboard!')
     } catch (err) {
       console.error('Failed to copy: ', err);
-      alert('Failed to copy results.');
+      alert('Failed to copy results.')
     }
   }
 };
@@ -197,24 +208,24 @@ const handleShare = async () => {
     } finally {
       setIsPostingSkeet(false);
     }
-  };
+  }
 
   /*
    * Load game state when logged in
    */
   useEffect(() => {
     if (!did) return;
-    fetchCurrentGame(did);
-  }, [did]);
+    fetchCurrentGame(did)
+  }, [did])
 
   /*
    * Load existing score when gameNumber is known
    */
   useEffect(() => {
-    if (did && viewedGameNumber != null) { // Use viewedGameNumber for score context
-      getScore(did, viewedGameNumber).then(score => setExistingScore(score));
+    if (did && viewedGameNumber != null) {
+      getScore(did, viewedGameNumber).then(score => setExistingScore(score))
     }
-  }, [did, viewedGameNumber]);
+  }, [did, viewedGameNumber])
 
   /*
    * Handle login
@@ -410,7 +421,6 @@ const handleShare = async () => {
               )}
             </div>
             
-            {/* Mobile keyboard only on mobile */}
             <div className="mobile-keyboard-container">
               <VirtualKeyboard
                 keyboardStatus={keyboardStatus}
@@ -419,34 +429,24 @@ const handleShare = async () => {
                 onDelete={handleVirtualKeyBackspace}
               />
             </div>
+
             {status === GameStatus.Won && (
               <div className="message">
                 Congrats! You won! Score saved!
               </div>
             )}
+
             {status === GameStatus.Lost && (
               <div className="message">
                 Game Over. Score saved.
               </div>
             )}
+
             {shareText && (
-              <div className="share-results-box" style={{ marginTop: '1rem', padding: '1rem', border: '1px solid #555', borderRadius: '8px', backgroundColor: '#2a2a2e' }}>
-                <h3 style={{ marginTop: 0, marginBottom: '0.5rem', textAlign: 'center' }}>Share Results</h3>
-                <pre style={{ whiteSpace: 'pre-wrap', background: '#1e1e20', padding: '10px', borderRadius: '4px', textAlign: 'left', color: '#eee', border: '1px solid #444' }}>{shareText}</pre>
-                <div className="share-buttons" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-around', gap: '0.5rem' }}>
-                  <button onClick={handleShare} className="btn-glass" style={{ flex: 1 }}>Copy</button>
-                  <button onClick={handleSkeetResults} disabled={isPostingSkeet} className="btn-glass" style={{ flex: 1, opacity: isPostingSkeet ? 0.6 : 1 }}>
-                    {isPostingSkeet ? 'Posting...' : 'Post'}
-                  </button>
-                </div>
-              </div>
+              <ShareResults shareText={shareText} onShare={handleShare} onSkeet={handleSkeetResults} isPostingSkeet={isPostingSkeet} />
             )}
           </div>
-          <footer className="game-footer">
-            <button type="button" className="btn-glass btn-sm" onClick={() => setShowStats(true)}>Stats</button>
-            <button type="button" className="btn-glass btn-sm" onClick={() => setShowAbout(true)}>About</button>
-            <button type="button" className="btn-glass btn-sm" onClick={() => { localStorage.removeItem('skyrdleSession'); setDid(null); }}>Logout</button>
-          </footer>
+          <Footer onShowStats={() => setShowStats(true)} onShowAbout={() => setShowAbout(true)} onLogout={() => { localStorage.removeItem('skyrdleSession'); setDid(null); }} />
 
         {showAbout && (
           <AboutModal onClose={() => setShowAbout(false)} />
@@ -457,11 +457,11 @@ const handleShare = async () => {
             <div className="modal-content" onClick={e => e.stopPropagation()}>
               <h2>Stats</h2>
               {stats ? (
-                <div className="stats">
-                  <p>Current Streak: {stats.currentStreak}</p>
-                  <p>Games Won: {stats.gamesWon}</p>
-                  <p>Average Score: {stats.averageScore.toFixed(2)}</p>
-                </div>
+                <ul className="modal-list" style={{ listStyleType: 'none' }}>
+                  <li>🔥 Streak: {stats.currentStreak}</li>
+                  <li>🏆 Games Won: {stats.gamesWon}</li>
+                  <li>🎯 Average Score: {stats.averageScore.toFixed(2)}</li>
+                </ul>
               ) : (
                 <p>Loading...</p>
               )}

@@ -17,7 +17,8 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
   top: 0;
   left: 0;
   right: 0;
-  background: rgba(18, 18, 19, 0.95);
+  
+  background: rgba(18, 18, 19, 0.60);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -411,11 +412,11 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
   text-align: center;
 
 
-  background: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.14);
   border-radius: 16px;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(11.3px);
+  -webkit-backdrop-filter: blur(11.3px);
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
@@ -449,6 +450,10 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
   font-size: 0.9rem;
 }
 
+.modal-content h2 {
+  font-size: 1.5rem;
+}
+
 .modal-list {
     width: 70%;
     list-style-type: disc;
@@ -461,5 +466,6 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
 
 .modal-list li {
   font-size: 1.2rem;
+  font-weight: bold;
 }
 
