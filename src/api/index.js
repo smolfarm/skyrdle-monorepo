@@ -13,7 +13,8 @@ function api(app, Game, Word, Player) {
         did: player.did,
         currentStreak: player.currentStreak,
         gamesWon: player.gamesWon,
-        averageScore: player.averageScore
+        averageScore: player.averageScore,
+        handle: player.handle
       }))
       
       res.json(data)

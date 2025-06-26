@@ -17,6 +17,7 @@
     "dotenv": "^16.5.0",
     "express": "^4.19.2",
     "mongoose": "^8.15.2",
+    "node-fetch": "^3.3.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "sweetalert2": "^11.22.1"
