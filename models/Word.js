@@ -20,4 +20,6 @@ const wordSchema = new mongoose.Schema({
   avgScore: { type: Number, default: 0 },
 })
 
+wordSchema.index({ gameNumber: 1 }, { unique: true })
+
 module.exports = mongoose.model('Word', wordSchema, 'words')
