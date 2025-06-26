@@ -14,6 +14,7 @@ const mongoose = require('mongoose')
 const playerSchema = new mongoose.Schema({
   did: { type: String, required: true, index: true },
   handle: { type: String },
+  displayName: { type: String },
 
   gamesWon: { type: Number, default: 0 },
   gamesLost: { type: Number, default: 0 },

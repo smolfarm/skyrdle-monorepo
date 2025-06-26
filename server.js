@@ -16,7 +16,7 @@ app.use(express.static(path.join(__dirname, 'dist')))
 
 const port = process.env.PORT || 4000
 
-const { Word, Game, Player } = require('./models')
+const { Word, Game, Player } = require('./src/models')
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -58,13 +58,13 @@ async function getGame(did) {
       guesses: [],
       status: 'Playing',
       gameNumber: currentGameNumber
-    });
-    await game.save();
+    })
+    await game.save()
   }
   // If a game exists for today, it's already up-to-date, or it's an old game (which this function doesn't handle)
   // The old logic for updating an existing game record to the current day is removed
   // because we now store each day's game as a separate document due to the compound index.
-  return game;
+  return game
 }
 
 /**
@@ -81,7 +81,7 @@ app.get('/api/game', async (req, res) => {
     console.error('Error fetching game state:', error);
     res.status(500).json({ error: 'Failed to fetch game state' });
   }
-});
+})
 
 /**
  * GET specific past game state
@@ -130,7 +130,7 @@ app.get('/api/game/:gameNumber', async (req, res) => {
     console.error('Error fetching or creating specific game state:', error);
     res.status(500).json({ error: 'Failed to fetch or create specific game state' });
   }
-});
+})
 
 /**
  * POST a new guess
@@ -222,50 +222,6 @@ app.post('/api/guess', async (req, res) => {
     console.error('Error processing guess:', error)
     res.status(500).json({ error: 'Failed to process guess' })
   }
-});
-
-// All other GET requests not handled before will return the React app
-// Stats endpoint
-app.get('/api/stats', async (req, res) => {
-  const { did } = req.query
-  if (!did) return res.status(400).json({ error: 'Missing did' })
-  try {
-    const games = await Game.find({ did }).sort({ gameNumber: -1 })
-    let streak = 0
-
-    for (const game of games) {
-      if (game.status === 'Won') streak++
-      else break
-    }
-
-    const wins = games.filter(g => g.status === 'Won').length
-    const winGames = games.filter(g => g.status === 'Won')
-    const avg = winGames.length > 0
-      ? winGames.reduce((sum, g) => sum + g.guesses.length, 0) / winGames.length
-      : 0
-
-    res.json({ currentStreak: streak, gamesWon: wins, averageScore: avg })
-  } catch (err) {
-    console.error('Error computing stats:', err);
-    res.status(500).json({ error: 'Failed to compute stats' });
-  }
-})
-
-app.get('/api/game/:gameNumber/stats', async (req, res) => {
-  const { gameNumber } = req.params
-  if (!gameNumber) return res.status(400).json({ error: 'Missing gameNumber' })
-  try {
-    const game = await Word.findOne({ gameNumber })
-    if (!game) return res.status(404).json({ error: 'Word not found' })
-    res.json({
-      gamesWon: game.gamesWon,
-      gamesLost: game.gamesLost,
-      avgScore: game.avgScore
-    })
-  } catch (err) {
-    console.error('Error fetching game stats:', err);
-    res.status(500).json({ error: 'Failed to fetch game stats' });
-  }
 })
 
 app.post('/api/auth/signin', async (req, res) => {
@@ -345,16 +301,19 @@ app.post('/api/auth/logout', async (req, res) => {
   }
 })
 
+const api = require('./src/api')
+api(app, Game, Word, Player)
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'))
 })
 
 // cron
-const syncMongoToAtprotoService = require('./cron/syncMongoToAtproto')
+const syncMongoToAtprotoService = require('./src/cron/syncMongoToAtproto')
 const syncMongoToAtproto = syncMongoToAtprotoService.initSync(Game)
-const updateWordStatsService = require('./cron/updateWordStats')
+const updateWordStatsService = require('./src/cron/updateWordStats')
 const updateWordStats = updateWordStatsService.initJob(Game, Word)
-const updatePlayerStatsService = require('./cron/updatePlayerStats')
+const updatePlayerStatsService = require('./src/cron/updatePlayerStats')
 const updatePlayerStats = updatePlayerStatsService.initJob(Game, Player)
 
 // Set up interval for periodic sync

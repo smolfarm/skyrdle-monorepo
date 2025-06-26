@@ -12,6 +12,7 @@
 require('dotenv').config()
 const mongoose = require('mongoose')
 const { Game, Player } = require('../models')
+const fetch = require('node-fetch').default
 
 async function updateStats() {
   await mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -48,9 +49,27 @@ async function updateStats() {
 
     const avgScore = winCount > 0 ? totalGuesses / winCount : 0
 
+    // Fetch username from PLC directory
+    let username;
+    try {
+      const res = await fetch(`https://plc.directory/${encodeURIComponent(did)}`);
+      if (res.ok) {
+        const doc = await res.json();
+        const aka = Array.isArray(doc.alsoKnownAs) ? doc.alsoKnownAs[0] : null;
+        if (aka) {
+          username = aka.startsWith('at://') ? aka.split('at://')[1] : aka;
+        }
+      }
+    } catch (err) {
+      console.error(`Failed to fetch PLC doc for ${did}:`, err);
+    }
+
+    // Build update fields and include username if available
+    const updateFields = { gamesWon, gamesLost, avgScore, currentStreak, maxStreak };
+    if (username) updateFields.handle = username;
     await Player.findOneAndUpdate(
       { did },
-      { gamesWon, gamesLost, avgScore, currentStreak, maxStreak },
+      updateFields,
       { upsert: true, new: true }
     )
 
