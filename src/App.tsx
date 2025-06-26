@@ -14,10 +14,10 @@ import { ServerGuess } from './atproto'
 import { login, saveScore, restoreSession, getScore, postSkeet, ServerGuess as AtProtoServerGuess } from './atproto'
 import VirtualKeyboard from './components/VirtualKeyboard'
 import AboutModal from './components/AboutModal'
-import logo from './logo.jpg'
 import Footer from './components/Footer'
 import ShareResults from './components/ShareResults'
 import Swal from 'sweetalert2'
+import LoginForm from './components/LoginForm'
 
 const WORD_LENGTH = 5
 
@@ -189,7 +189,12 @@ const handleShare = async () => {
   if (navigator.clipboard && shareText) {
     try {
       await navigator.clipboard.writeText(shareText)
-      alert('Results copied to clipboard!')
+      Swal.fire({
+        title: 'Success!',
+        text: 'Results copied to clipboard!',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      })
     } catch (err) {
       console.error('Failed to copy: ', err);
       alert('Failed to copy results.')
@@ -198,16 +203,20 @@ const handleShare = async () => {
 };
 
   const handleSkeetResults = async () => {
-    if (!shareText || !did) return;
-    setIsPostingSkeet(true);
+    if (!shareText || !did) return
+
+    setIsPostingSkeet(true)
+
     try {
-      await postSkeet(shareText);
+      await postSkeet(shareText)
+
       Swal.fire({
         title: 'Success!',
         text: 'Results posted to Bluesky!',
         icon: 'success',
         confirmButtonText: 'OK'
       })
+
     } catch (error: any) {
       console.error('Failed to post skeet:', error);
       Swal.fire({
@@ -274,8 +283,8 @@ const handleShare = async () => {
       })
         .then(res => res.json())
         .then(data => {
-          setGuesses(data.guesses);
-          // setGameNumber(data.gameNumber); // This is for current game, not necessarily the one submitted to
+          setGuesses(data.guesses)
+
           // The /api/guess endpoint always returns the current game's state after a guess.
           // So, if a guess is made while viewing a past game (which shouldn't happen),
           // it will still update the *current* game on the server.
@@ -285,7 +294,7 @@ const handleShare = async () => {
           setCurrent([]);
           calculateKeyboardStatus(data.guesses)
         })
-        .catch(console.error);
+        .catch(console.error)
     } else if (key === 'Backspace') {
       setCurrent(current.slice(0, -1))
     } else if (/^[a-zA-Z]$/.test(key) && current.length < WORD_LENGTH) {
@@ -341,12 +350,12 @@ const handleShare = async () => {
     })
       .then(res => res.json())
       .then(data => {
-        const newGuesses = data.guesses;
-        setGuesses(newGuesses);
-        calculateKeyboardStatus(newGuesses);
-        if (did && viewedGameNumber !== null) fetchSpecificGame(did, viewedGameNumber);
-        setStatus(GameStatus[data.status as keyof typeof GameStatus]);
-        setCurrent([]);
+        const newGuesses = data.guesses
+        setGuesses(newGuesses)
+        calculateKeyboardStatus(newGuesses)
+        if (did && viewedGameNumber !== null) fetchSpecificGame(did, viewedGameNumber)
+        setStatus(GameStatus[data.status as keyof typeof GameStatus])
+        setCurrent([])
       })
       .catch(console.error);
   }
@@ -369,29 +378,16 @@ const handleShare = async () => {
   return (
     <div className="app">
       {!did ? (
-        <div className="login">
-            <img src={logo} alt="Skyrdle Logo" className="login-logo" />
-          <h2>Login to Skyrdle</h2>
-          <input
-            placeholder="Bluesky Username or Email"
-            value={identifier}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setIdentifier(e.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-          />
-          {requires2FA && (
-            <input
-              placeholder="2FA Code"
-              value={twoFactorCode}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => setTwoFactorCode(e.target.value)}
-            />
-          )}
-          <button onClick={handleLogin} className="btn-glass">Login</button>
-        </div>
+        <LoginForm
+          identifier={identifier}
+          password={password}
+          requires2FA={requires2FA}
+          twoFactorCode={twoFactorCode}
+          onLoginAttempt={handleLogin}
+          onIdentifierChange={setIdentifier}
+          onPasswordChange={setPassword}
+          onTwoFactorCodeChange={setTwoFactorCode}
+        />
       ) : (
         <>
           <header className="game-header-fixed">
