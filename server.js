@@ -3,13 +3,26 @@ const cors = require('cors')
 const mongoose = require('mongoose')
 require('dotenv').config()
 const crypto = require('crypto')
+const fs = require('fs')
 let wordList = []
+let validationWordList = new Set()
 const path = require('path')
 const { OAuthSession } = require('@atproto/oauth-client-node')
 
 const app = express()
 app.use(cors())
 app.use(express.json())
+
+// Load validation word list from words.json
+try {
+  const wordsData = fs.readFileSync(path.join(__dirname, 'src', 'words.json'), 'utf8')
+  const wordsFromFile = JSON.parse(wordsData).words
+  validationWordList = new Set(wordsFromFile.map(w => w.toUpperCase()))
+  console.log(`Loaded ${validationWordList.size} words for validation.`)
+} catch (err) {
+  console.error('Error loading validation word list from words.json:', err)
+  process.exit(1) // Exit if the validation list can't be loaded.
+}
 
 // Serve static files from the React app build directory
 app.use(express.static(path.join(__dirname, 'dist')))
@@ -141,6 +154,10 @@ app.get('/api/game/:gameNumber', async (req, res) => {
 app.post('/api/guess', async (req, res) => {
   const { did, guess, gameNumber } = req.body;
   if (!did || !guess || gameNumber === undefined) return res.status(400).json({ error: 'Missing did, guess, or gameNumber' });
+
+    if (!validationWordList.has(guess.toUpperCase())) {
+      return res.status(400).json({ error: 'Invalid word' });
+    }
 
   try {
     const parsedGameNumber = parseInt(gameNumber, 10);

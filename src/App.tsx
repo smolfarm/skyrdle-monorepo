@@ -46,6 +46,7 @@ const App: React.FC = () => {
   const [showAbout, setShowAbout] = useState(false)
   const [showStats, setShowStats] = useState(false)
   const [stats, setStats] = useState<{ currentStreak: number; gamesWon: number; averageScore: number } | null>(null)
+  const [isInvalidGuess, setIsInvalidGuess] = useState(false)
 
   // Fetch stats when stats view is shown
   useEffect(() => {
@@ -279,20 +280,27 @@ const handleShare = async () => {
         method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ did, guess: guessStr, gameNumber: viewedGameNumber }),
       })
-        .then(res => res.json())
+        .then(async res => {
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || 'An unknown error occurred');
+          }
+          return res.json();
+        })
         .then(data => {
           setGuesses(data.guesses)
-
-          // The /api/guess endpoint always returns the current game's state after a guess.
-          // So, if a guess is made while viewing a past game (which shouldn't happen),
-          // it will still update the *current* game on the server.
-          // We should refresh the current game view if a guess is made.
           if (did && viewedGameNumber !== null) fetchSpecificGame(did, viewedGameNumber); // Refresh the viewed game's data
-          setStatus(GameStatus[data.status as keyof typeof GameStatus]); // This status is for the game guessed on
+          setStatus(GameStatus[data.status as keyof typeof GameStatus]);
           setCurrent([]);
           calculateKeyboardStatus(data.guesses)
         })
-        .catch(console.error)
+        .catch(error => {
+          console.error(error);
+          if (error.message === 'Invalid word') {
+            setIsInvalidGuess(true);
+            setTimeout(() => setIsInvalidGuess(false), 500);
+          }
+        })
     } else if (key === 'Backspace') {
       setCurrent(current.slice(0, -1))
     } else if (/^[a-zA-Z]$/.test(key) && current.length < WORD_LENGTH) {
@@ -346,7 +354,13 @@ const handleShare = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ did, guess: guessStr, gameNumber: viewedGameNumber }),
     })
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || 'An unknown error occurred');
+        }
+        return res.json();
+      })
       .then(data => {
         const newGuesses = data.guesses
         setGuesses(newGuesses)
@@ -355,7 +369,13 @@ const handleShare = async () => {
         setStatus(GameStatus[data.status as keyof typeof GameStatus])
         setCurrent([])
       })
-      .catch(console.error);
+      .catch(error => {
+        console.error(error);
+        if (error.message === 'Invalid word') {
+          setIsInvalidGuess(true);
+          setTimeout(() => setIsInvalidGuess(false), 500);
+        }
+      });
   }
 
   const handleVirtualKeyBackspace = () => {
@@ -420,7 +440,7 @@ const handleShare = async () => {
                 </div>
               ))}
               {status === GameStatus.Playing && (
-                <div className="row">
+                <div className={`row${isInvalidGuess ? ' invalid-row' : ''}`}>
                   {Array.from({ length: WORD_LENGTH }).map((_, i) => renderCell(current[i]||'', i))}
                 </div>
               )}
