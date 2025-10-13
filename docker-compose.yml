@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    image: skyrdle:latest
+    container_name: skyrdle-app
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      - PORT=4000
+      - MONGODB_URI=${MONGODB_URI}
+    restart: unless-stopped
