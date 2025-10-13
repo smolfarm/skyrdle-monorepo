@@ -1,14 +1,15 @@
 {
   "name": "skyrdle",
   "version": "1.0.0",
+  "packageManager": "bun@1.1.34",
   "scripts": {
-    "dev": "concurrently \"node server.js\" \"vite\"",
+    "dev": "concurrently \"bun server.js\" \"vite\"",
     "build": "vite build",
     "preview": "vite preview",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "server": "node server.js",
-    "start": "node server.js",
-    "postinstall": "npm run build"
+    "server": "bun server.js",
+    "start": "bun server.js",
+    "postinstall": "bun run build"
   },
   "dependencies": {
     "@atproto/api": "^0.3.0",
