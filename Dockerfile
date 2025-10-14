@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package.json bun.lock ./
 
 # Install all deps (including dev)
-RUN bun install --frozen-lockfile
+RUN bun install --frozen-lockfile --ignore-scripts
 
 # Copy the rest of the repo
 COPY . .
@@ -25,7 +25,7 @@ WORKDIR /app
 
 # Copy only package manifests and install prod deps
 COPY package.json bun.lock ./
-RUN bun install --production --frozen-lockfile
+RUN bun install --production --frozen-lockfile --ignore-scripts
 
 # Copy server + built client + required runtime source files
 COPY --from=builder /app/dist ./dist
