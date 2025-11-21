@@ -7,7 +7,10 @@ type GameStats = {
 };
 
 async function fetchGameStats(): Promise<GameStats[]> {
-  const res = await fetch(`/api/games/stats`, {
+  const baseUrl = process.env.NEXT_PUBLIC_ADMIN_BASE_URL || "http://localhost:3000";
+  const url = new URL("/api/games/stats", baseUrl).toString();
+
+  const res = await fetch(url, {
     cache: "no-store",
   })
 
