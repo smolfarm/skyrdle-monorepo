@@ -9,23 +9,23 @@ type GameStats = {
 async function fetchGameStats(): Promise<GameStats[]> {
   const res = await fetch(`/api/games/stats`, {
     cache: "no-store",
-  });
+  })
 
   if (!res.ok) {
     throw new Error("Failed to fetch game stats");
   }
 
-  return res.json();
+  return res.json()
 }
 
 export default async function Home() {
-  let games: GameStats[] = [];
-  let error: string | null = null;
+  let games: GameStats[] = []
+  let error: string | null = null
 
   try {
-    games = await fetchGameStats();
+    games = await fetchGameStats()
   } catch (e) {
-    error = e instanceof Error ? e.message : "Unknown error";
+    error = e instanceof Error ? e.message : "Unknown error"
   }
 
   return (
@@ -97,5 +97,5 @@ export default async function Home() {
         </section>
       </main>
     </div>
-  );
+  )
 }
