@@ -37,6 +37,14 @@ const WordSchema = new Schema(
 
 const Word = (models.Word as mongoose.Model<any>) || model("Word", WordSchema);
 
+function shuffleArray<T>(items: T[]): T[] {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+  return items;
+}
+
 function loadAllowedWords(): string[] {
   try {
     const wordsPath = path.join(process.cwd(), "..", "src", "words.json");
@@ -83,11 +91,11 @@ export async function GET(request: Request) {
       }
     }
 
-    let result = suggestions;
+    let result = shuffleArray(suggestions);
     if (limitParam) {
       const parsedLimit = parseInt(limitParam, 10);
       if (!Number.isNaN(parsedLimit) && parsedLimit > 0) {
-        result = suggestions.slice(0, parsedLimit);
+        result = result.slice(0, parsedLimit);
       }
     }
 
