@@ -71,6 +71,38 @@ function api(app, Game, Word, Player) {
         res.status(500).json({ error: 'Failed to fetch game stats' });
       }
     })
+
+    /**
+     * Get stats for all games
+     */
+    app.get('/api/games/stats', async (req, res) => {
+      try {
+        const { limit } = req.query
+
+        let query = Word.find({}).sort({ gameNumber: 1 })
+        if (limit) {
+          const parsedLimit = parseInt(limit, 10)
+          if (!isNaN(parsedLimit) && parsedLimit > 0) {
+            query = query.limit(parsedLimit)
+          }
+        }
+
+        const words = await query
+
+        const data = words.map(word => ({
+          gameNumber: word.gameNumber,
+          word: word.word,
+          gamesWon: word.gamesWon,
+          gamesLost: word.gamesLost,
+          avgScore: word.avgScore,
+        }))
+
+        res.json(data)
+      } catch (err) {
+        console.error('Error fetching all game stats:', err)
+        res.status(500).json({ error: 'Failed to fetch all game stats' })
+      }
+    })
 }
 
 module.exports = api
