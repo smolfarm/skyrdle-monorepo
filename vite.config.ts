@@ -21,6 +21,12 @@ export default defineConfig({
         secure: false,
         rewrite: path => path.replace(/^\/api/, '/api'),
       },
+      // Serve OAuth client metadata from backend (avoids dev server 404/HTML)
+      '/.well-known': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   base: './',
