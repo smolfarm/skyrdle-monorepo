@@ -18,9 +18,9 @@ export default function LoginForm({ handle, onHandleChange, onLoginAttempt }: Lo
                 value={handle}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => onHandleChange(e.target.value)}
             />
-            <button onClick={onLoginAttempt} className="btn-glass" style={{ marginTop: '1rem' }}>Login</button>
+            <button onClick={onLoginAttempt} className="btn-glass">Login</button>
 
-            <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+            <div style={{ marginTop: '4rem', textAlign: 'center' }}>
                 <a
                     href="https://smol.life/profile/did:plc:jylenhzj4u2te27qmcrdjtoh"
                     target="_blank"
