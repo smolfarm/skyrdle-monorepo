@@ -86,7 +86,9 @@ export async function initAuth(): Promise<string | null> {
 export async function startLogin(handle: string) {
   const client = await ensureClient()
   const url = await client.authorize(handle, {
-    scope: 'atproto repo:farm.smol.games.skyrdle.score?action=create',
+    // Request Skyrdle score read/write and feed post create access
+    scope:
+      'atproto repo:farm.smol.games.skyrdle.score?action=read&action=create&action=update repo:app.bsky.feed.post?action=create',
   })
   window.location.href = url.toString()
 }
