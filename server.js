@@ -17,22 +17,27 @@ app.use(express.json())
 const explicitOrigin = process.env.PUBLIC_ORIGIN || process.env.APP_ORIGIN
 function getPublicOrigin(req) {
   if (explicitOrigin) return explicitOrigin.replace(/\/$/, '')
+  const xfProto = req.get('x-forwarded-proto')
+  const xfHost = req.get('x-forwarded-host')
+  if (xfHost) return `${xfProto || req.protocol}://${xfHost}`.replace(/\/$/, '')
   return `${req.protocol}://${req.get('host')}`
 }
 
 app.get('/.well-known/client-metadata.json', (req, res) => {
   const origin = getPublicOrigin(req)
+  const directOrigin = `${req.protocol}://${req.get('host')}`.replace(/\/$/, '')
+  const origins = Array.from(new Set([origin, directOrigin]))
   const clientId = `${origin}/.well-known/client-metadata.json`
   res.setHeader('Cache-Control', 'public, max-age=300')
   res.json({
     client_id: clientId,
     client_name: 'Skyrdle',
     application_type: 'web',
-    redirect_uris: [
-      `${origin}/`,
-      `${origin}`, // some hosts strip trailing slash
-      `${origin}/index.html`, // static hosting may serve index.html explicitly
-    ],
+    redirect_uris: origins.flatMap(o => ([
+      `${o}/`,
+      `${o}`, // some hosts strip trailing slash
+      `${o}/index.html`, // static hosting may serve index.html explicitly
+    ])),
     grant_types: ['authorization_code', 'refresh_token'],
     response_types: ['code'],
     scope:
