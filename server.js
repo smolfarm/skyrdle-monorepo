@@ -33,6 +33,7 @@ app.get('/.well-known/client-metadata.json', (req, res) => {
     response_types: ['code'],
     scope: 'atproto',
     token_endpoint_auth_method: 'none',
+    dpop_bound_access_tokens: true,
   })
 })
 
