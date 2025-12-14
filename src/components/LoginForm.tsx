@@ -25,7 +25,7 @@ export default function LoginForm({ handle, onHandleChange, onLoginAttempt }: Lo
                     onChange={(e: ChangeEvent<HTMLInputElement>) => onHandleChange(e.target.value)}
                 />
                 <div style={{ textAlign: 'center' }}>
-                    <button type="submit" className="btn-glass">Login</button>
+                    <button type="submit" className="btn-glass btn-login">Login</button>
                 </div>
             </form>
 
