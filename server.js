@@ -30,8 +30,7 @@ app.get('/.well-known/client-metadata.json', (req, res) => {
     application_type: 'web',
     redirect_uris: [
       `${origin}/`,
-      `${origin}`, // some hosts strip trailing slash
-      `${origin}/index.html`, // static hosting may serve index.html explicitly
+      `${origin}`
     ],
     grant_types: ['authorization_code', 'refresh_token'],
     response_types: ['code'],
