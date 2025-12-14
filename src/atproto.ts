@@ -25,6 +25,10 @@ export let agent: AtpAgentInstance | null = null
 
 let oauthClient: BrowserOAuthClient | null = null
 
+function getDid(session: OAuthSession): string | undefined {
+  return (session as any).did ?? session.sub
+}
+
 function resolveClientId() {
   const envClientId = import.meta.env.VITE_ATPROTO_CLIENT_ID
   if (envClientId) return envClientId
@@ -54,6 +58,7 @@ function hydrateAgent(session: OAuthSession) {
     (session as any).pds ||
     session.serverMetadata?.issuer ||
     'https://bsky.social'
+  const did = getDid(session)
   agent = new AtpAgent({
     service,
   })
@@ -61,7 +66,7 @@ function hydrateAgent(session: OAuthSession) {
     accessJwt: session.accessJwt,
     refreshJwt: session.refreshJwt,
     handle: session.handle,
-    did: session.did,
+    did,
     email: session.email,
     pds: service,
   }
@@ -76,7 +81,8 @@ export async function initAuth(): Promise<string | null> {
   const result = await client.init()
   if (result?.session) {
     hydrateAgent(result.session)
-    return result.session.did
+    const did = getDid(result.session)
+    if (did) return did
   }
   return null
 }
