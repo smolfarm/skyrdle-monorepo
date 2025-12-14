@@ -12,6 +12,28 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+const explicitOrigin = process.env.PUBLIC_ORIGIN || process.env.APP_ORIGIN
+function getPublicOrigin(req) {
+  if (explicitOrigin) return explicitOrigin.replace(/\/$/, '')
+  return `${req.protocol}://${req.get('host')}`
+}
+
+app.get('/.well-known/client-metadata.json', (req, res) => {
+  const origin = getPublicOrigin(req)
+  const clientId = `${origin}/.well-known/client-metadata.json`
+  res.setHeader('Cache-Control', 'public, max-age=300')
+  res.json({
+    client_id: clientId,
+    client_name: 'Skyrdle',
+    application_type: 'web',
+    redirect_uris: [`${origin}/`],
+    grant_types: ['authorization_code', 'refresh_token'],
+    response_types: ['code'],
+    scope: 'atproto',
+    token_endpoint_auth_method: 'none',
+  })
+})
+
 // Load validation word list from words.json
 try {
   const wordsData = fs.readFileSync(path.join(__dirname, 'src', 'words.json'), 'utf8')
