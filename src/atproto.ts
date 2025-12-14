@@ -27,9 +27,9 @@ let oauthClient: BrowserOAuthClient | null = null
 
 async function ensureClient(): Promise<BrowserOAuthClient> {
   if (oauthClient) return oauthClient
-  const clientId = import.meta.env.ATPROTO_CLIENT_ID
+  const clientId = import.meta.env.VITE_ATPROTO_CLIENT_ID
   if (!clientId) {
-    throw new Error('Missing ATPROTO_CLIENT_ID for AT Protocol OAuth')
+    throw new Error('Missing VITE_ATPROTO_CLIENT_ID for AT Protocol OAuth')
   }
   oauthClient = await BrowserOAuthClient.load({
     clientId,

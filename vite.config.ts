@@ -3,8 +3,6 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  // Allow non-VITE_ env vars (e.g., ATPROTO_CLIENT_ID) to be exposed to the client.
-  envPrefix: ['VITE_', 'ATPROTO_CLIENT_'],
   server: {
     port: 3000,
     allowedHosts: ['atproto-monorepo.onrender.com', 'skyrdle.com'],
