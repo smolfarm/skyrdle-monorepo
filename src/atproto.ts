@@ -43,6 +43,8 @@ async function ensureClient(): Promise<BrowserOAuthClient> {
   oauthClient = await BrowserOAuthClient.load({
     clientId,
     handleResolver: 'https://bsky.social/',
+    // Use query response mode so code params land in location.search, which our client can read
+    responseMode: 'query',
   })
   return oauthClient
 }

@@ -28,7 +28,11 @@ app.get('/.well-known/client-metadata.json', (req, res) => {
     client_id: clientId,
     client_name: 'Skyrdle',
     application_type: 'web',
-    redirect_uris: [`${origin}/`],
+    redirect_uris: [
+      `${origin}/`,
+      `${origin}`, // some hosts strip trailing slash
+      `${origin}/index.html`, // static hosting may serve index.html explicitly
+    ],
     grant_types: ['authorization_code', 'refresh_token'],
     response_types: ['code'],
     scope:
