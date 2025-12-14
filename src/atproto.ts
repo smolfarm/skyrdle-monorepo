@@ -27,7 +27,7 @@ let oauthClient: BrowserOAuthClient | null = null
 
 async function ensureClient(): Promise<BrowserOAuthClient> {
   if (oauthClient) return oauthClient
-  const clientId = import.meta.env.ATPROTO_CLIENT_ID
+  const clientId = import.meta.env.ATPROTO_CLIENT_ID ?? "https://c70c974a5148.ngrok-free.app"
   if (!clientId) {
     throw new Error('Missing ATPROTO_CLIENT_ID for AT Protocol OAuth')
   }

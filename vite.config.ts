@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    allowedHosts: ['c70c974a5148.ngrok-free.app'],
     proxy: {
       // Proxy AT Protocol XRPC requests to avoid CORS
       '/xrpc': {
