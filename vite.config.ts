@@ -7,7 +7,7 @@ export default defineConfig({
   envPrefix: ['VITE_', 'ATPROTO_CLIENT_'],
   server: {
     port: 3000,
-    allowedHosts: ['c70c974a5148.ngrok-free.app'],
+    allowedHosts: ['atproto-monorepo.onrender.com', 'skyrdle.com'],
     proxy: {
       // Proxy AT Protocol XRPC requests to avoid CORS
       '/xrpc': {
