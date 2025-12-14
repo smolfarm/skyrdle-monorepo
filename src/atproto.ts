@@ -25,11 +25,18 @@ export let agent: AtpAgentInstance | null = null
 
 let oauthClient: BrowserOAuthClient | null = null
 
-async function ensureClient(): Promise<BrowserOAuthClient> {
-  console.log(import.meta.env)
+function resolveClientId() {
+  const envClientId = import.meta.env.VITE_ATPROTO_CLIENT_ID
+  if (envClientId) return envClientId
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/.well-known/client-metadata.json`
+  }
+  return null
+}
 
+async function ensureClient(): Promise<BrowserOAuthClient> {
   if (oauthClient) return oauthClient
-  const clientId = import.meta.env.VITE_ATPROTO_CLIENT_ID
+  const clientId = resolveClientId()
   if (!clientId) {
     throw new Error('Missing VITE_ATPROTO_CLIENT_ID for AT Protocol OAuth')
   }
