@@ -9,8 +9,7 @@
 * AT Protocol integration for Skyrdle.                                     
 */
 
-import { AtpAgent } from '@atproto/api'
-import { XRPCError } from '@atproto/xrpc'
+import { Agent } from '@atproto/api'
 import { BrowserOAuthClient, OAuthSession } from '@atproto/oauth-client-browser'
 
 const USER_SCORE_COLLECTION = 'farm.smol.games.skyrdle.score'
@@ -18,16 +17,13 @@ const USER_SCORE_COLLECTION = 'farm.smol.games.skyrdle.score'
 // Define the type for a guess with evaluation
 export type ServerGuess = { letters: string[]; evaluation: ('correct'|'present'|'absent')[] }
 
-type AtpAgentInstance = InstanceType<typeof AtpAgent>
+type AgentInstance = InstanceType<typeof Agent>
 
-// AT Protocol agent, hydrated from OAuth session
-export let agent: AtpAgentInstance | null = null
+// AT Protocol agent, created from OAuth session
+export let agent: AgentInstance | null = null
 
 let oauthClient: BrowserOAuthClient | null = null
-
-function getDid(session: OAuthSession): string | undefined {
-  return (session as any).did ?? session.sub
-}
+let currentSession: OAuthSession | null = null
 
 function resolveClientId() {
   const envClientId = import.meta.env.VITE_ATPROTO_CLIENT_ID
@@ -47,29 +43,14 @@ async function ensureClient(): Promise<BrowserOAuthClient> {
   oauthClient = await BrowserOAuthClient.load({
     clientId,
     handleResolver: 'https://bsky.social/',
-    // Use query response mode so code params land in location.search, which our client can read
-    responseMode: 'query',
   })
   return oauthClient
 }
 
-function hydrateAgent(session: OAuthSession) {
-  const service =
-    (session as any).pds ||
-    session.serverMetadata?.issuer ||
-    'https://bsky.social'
-  const did = getDid(session)
-  agent = new AtpAgent({
-    service,
-  })
-  ;(agent as any).session = {
-    accessJwt: session.accessJwt,
-    refreshJwt: session.refreshJwt,
-    handle: session.handle,
-    did,
-    email: session.email,
-    pds: service,
-  }
+/** Create an Agent from the OAuth session */
+function createAgentFromSession(session: OAuthSession) {
+  currentSession = session
+  agent = new Agent(session)
 }
 
 /**
@@ -80,10 +61,11 @@ export async function initAuth(): Promise<string | null> {
   const client = await ensureClient()
   const result = await client.init()
   if (result?.session) {
-    hydrateAgent(result.session)
-    const did = getDid(result.session)
-    if (did) return did
+    createAgentFromSession(result.session)
+    console.log('[Skyrdle OAuth] Session restored for:', result.session.sub)
+    return result.session.sub
   }
+  console.log('[Skyrdle OAuth] No session found on init')
   return null
 }
 
@@ -93,12 +75,12 @@ export async function initAuth(): Promise<string | null> {
  */
 export async function startLogin(handle: string) {
   const client = await ensureClient()
-  const url = await client.authorize(handle, {
+  // Use signIn instead of authorize - it handles the redirect properly
+  await client.signIn(handle, {
     // Request Skyrdle score read/write and feed post create access
     scope:
       'atproto repo:farm.smol.games.skyrdle.score?action=create&action=update repo:app.bsky.feed.post?action=create',
   })
-  window.location.href = url.toString()
 }
 
 /**
@@ -106,8 +88,15 @@ export async function startLogin(handle: string) {
  */
 export async function logout() {
   const client = await ensureClient()
-  await client.signOut()
+  if (currentSession?.sub) {
+    try {
+      await client.revoke(currentSession.sub)
+    } catch (e) {
+      console.warn('[Skyrdle OAuth] Error revoking session:', e)
+    }
+  }
   agent = null
+  currentSession = null
 }
 
 // Helper to compute SHA-256 hash of a string
@@ -122,38 +111,16 @@ async function computeHash(input: string): Promise<string> {
 // Save score to AT Protocol ledger
 export async function saveScore(did: string, gameNumber: number, score: number, guesses: ServerGuess[]) {
   if (!agent) throw new Error('Not authenticated')
-  try {
-    const isWin = score >= 0;
-    // use gameNumber as rkey to avoid duplicate records
-    const recordHash = await computeHash(`${did}|${gameNumber}|${score}`);
-    await agent.com.atproto.repo.createRecord({
-      repo: did,
-      collection: USER_SCORE_COLLECTION,
-      rkey: String(gameNumber),
-      record: { gameNumber, score, guesses, timestamp: new Date().toISOString(), hash: recordHash, isWin: isWin },
-    });
-  } catch (e: any) {
-    // refresh token on expiry
-    if (e instanceof XRPCError && e.error === 'ExpiredToken') {
-      const sess = agent.session;
-      if (!sess?.refreshJwt) throw e;
-      const res = await agent.api.com.atproto.server.refreshSession({ refreshJwt: sess.refreshJwt });
-      // update session
-      agent.session = { ...agent.session, accessJwt: res.data.accessJwt, refreshJwt: res.data.refreshJwt };
-      localStorage.setItem('skyrdleSession', JSON.stringify(agent.session));
-      // retry with same rkey to update rather than duplicate
-      const isWinRetry = score >= 0;
-      const recordHashRetry = await computeHash(`${did}|${gameNumber}|${score}`);
-      await agent.com.atproto.repo.createRecord({
-        repo: did,
-        collection: USER_SCORE_COLLECTION,
-        rkey: String(gameNumber),
-        record: { gameNumber, score, guesses, timestamp: new Date().toISOString(), hash: recordHashRetry, isWin: isWinRetry },
-      });
-    } else {
-      throw e;
-    }
-  }
+  const isWin = score >= 0;
+  // use gameNumber as rkey to avoid duplicate records
+  const recordHash = await computeHash(`${did}|${gameNumber}|${score}`);
+  // Agent handles token refresh automatically for OAuth sessions
+  await agent.com.atproto.repo.createRecord({
+    repo: did,
+    collection: USER_SCORE_COLLECTION,
+    rkey: String(gameNumber),
+    record: { gameNumber, score, guesses, timestamp: new Date().toISOString(), hash: recordHash, isWin: isWin },
+  });
 }
 
 // Check existing score for a given game
@@ -169,89 +136,63 @@ export async function getScore(did: string, gameNumber: number): Promise<number 
       if (gn === gameNumber) return score;
     }
     return null;
-  } catch (e: any) {
-    console.error(e);
+  } catch (e) {
+    console.error('[Skyrdle OAuth] Error fetching score:', e);
     return null;
   }
+}
+
+/** Get current account DID */
+export function getAccountDid(): string | undefined {
+  return agent?.assertDid
 }
 
 /**
  * Post results to Bluesky
  */
 export async function postSkeet(text: string) {
-  if (!agent?.session?.did) throw new Error('Not logged in')
+  const did = agent?.assertDid
+  if (!did) throw new Error('Not logged in')
 
-  try {
-    const encoder = new TextEncoder();
-      const facets: any[] = [];
-      const keyword = 'Skyrdle';
-      const idx = text.indexOf(keyword);
-      if (idx !== -1) {
-        const byteStart = encoder.encode(text.slice(0, idx)).length;
-        const byteEnd = byteStart + encoder.encode(keyword).length;
-        facets.push({
-          index: { byteStart, byteEnd },
-          features: [{ $type: 'app.bsky.richtext.facet#link', uri: 'https://skyrdle.com' }]
-        });
-      }
-      await agent.com.atproto.repo.createRecord({
-        repo: agent.session.did,
-        collection: 'app.bsky.feed.post',
-        record: {
-          $type: 'app.bsky.feed.post',
-          text,
-          createdAt: new Date().toISOString(),
-          langs: ['en'],
-          facets
-        },
-      })
-  } catch (e: any) {
-    if (e instanceof XRPCError && e.error === 'ExpiredToken') {
-      const sess = agent.session
-      if (!sess?.refreshJwt) throw e
-      const res = await agent.api.com.atproto.server.refreshSession({ refreshJwt: sess.refreshJwt })
-      agent.session = { ...agent.session, accessJwt: res.data.accessJwt, refreshJwt: res.data.refreshJwt }
-      localStorage.setItem('skyrdleSession', JSON.stringify(agent.session))
-
-      // Retry post
-      const encoder = new TextEncoder();
-        const facets: any[] = [];
-        const keyword = 'Skyrdle';
-        const idx = text.indexOf(keyword);
-        if (idx !== -1) {
-          const byteStart = encoder.encode(text.slice(0, idx)).length;
-          const byteEnd = byteStart + encoder.encode(keyword).length;
-          facets.push({
-            index: { byteStart, byteEnd },
-            features: [{ $type: 'app.bsky.richtext.facet#link', uri: 'https://skyrdle.com' }]
-          });
-        }
-        await agent.com.atproto.repo.createRecord({
-          repo: agent.session.did,
-          collection: 'app.bsky.feed.post',
-          record: {
-            $type: 'app.bsky.feed.post',
-            text,
-            createdAt: new Date().toISOString(),
-            langs: ['en'],
-            facets
-          },
-        })
-    } else {
-      throw e
-    }
+  const encoder = new TextEncoder();
+  const facets: any[] = [];
+  const keyword = 'Skyrdle';
+  const idx = text.indexOf(keyword);
+  if (idx !== -1) {
+    const byteStart = encoder.encode(text.slice(0, idx)).length;
+    const byteEnd = byteStart + encoder.encode(keyword).length;
+    facets.push({
+      index: { byteStart, byteEnd },
+      features: [{ $type: 'app.bsky.richtext.facet#link', uri: 'https://skyrdle.com' }]
+    });
   }
+  // Agent handles token refresh automatically
+  await agent.com.atproto.repo.createRecord({
+    repo: did,
+    collection: 'app.bsky.feed.post',
+    record: {
+      $type: 'app.bsky.feed.post',
+      text,
+      createdAt: new Date().toISOString(),
+      langs: ['en'],
+      facets
+    },
+  })
 }
 
 /**
- * Check whether we have an active OAuth session and refresh agent if needed.
+ * Restore a specific session by DID.
  */
-export async function refreshSession() {
+export async function restoreSession(did: string): Promise<boolean> {
   const client = await ensureClient()
-  const result = await client.init()
-  if (result?.session) {
-    hydrateAgent(result.session)
-  } else {
+  try {
+    const session = await client.restore(did)
+    createAgentFromSession(session)
+    return true
+  } catch (e) {
+    console.warn('[Skyrdle OAuth] Failed to restore session for', did, e)
     agent = null
+    currentSession = null
+    return false
   }
 }
