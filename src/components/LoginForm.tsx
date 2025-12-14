@@ -13,12 +13,21 @@ export default function LoginForm({ handle, onHandleChange, onLoginAttempt }: Lo
         <div className="login">
             <img src={logo} alt="Skyrdle Logo" className="login-logo" />
             <h2>Skyrdle Login</h2>
-            <input
-                placeholder="Bluesky Handle or ATProto DID"
-                value={handle}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => onHandleChange(e.target.value)}
-            />
-            <button onClick={onLoginAttempt} className="btn-glass">Login</button>
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault()
+                    onLoginAttempt()
+                }}
+            >
+                <input
+                    placeholder="Bluesky Handle or ATProto DID"
+                    value={handle}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => onHandleChange(e.target.value)}
+                />
+                <div style={{ textAlign: 'center' }}>
+                    <button type="submit" className="btn-glass">Login</button>
+                </div>
+            </form>
 
             <div style={{ marginTop: '4rem', textAlign: 'center' }}>
                 <a
