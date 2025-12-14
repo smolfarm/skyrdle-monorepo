@@ -32,7 +32,7 @@ app.get('/.well-known/client-metadata.json', (req, res) => {
     grant_types: ['authorization_code', 'refresh_token'],
     response_types: ['code'],
     scope:
-      'atproto repo:farm.smol.games.skyrdle.score?action=read&action=create&action=update repo:app.bsky.feed.post?action=create',
+      'atproto repo:farm.smol.games.skyrdle.score?action=create&action=update repo:app.bsky.feed.post?action=create',
     token_endpoint_auth_method: 'none',
     dpop_bound_access_tokens: true,
   })

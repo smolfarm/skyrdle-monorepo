@@ -88,7 +88,7 @@ export async function startLogin(handle: string) {
   const url = await client.authorize(handle, {
     // Request Skyrdle score read/write and feed post create access
     scope:
-      'atproto repo:farm.smol.games.skyrdle.score?action=read&action=create&action=update repo:app.bsky.feed.post?action=create',
+      'atproto repo:farm.smol.games.skyrdle.score?action=create&action=update repo:app.bsky.feed.post?action=create',
   })
   window.location.href = url.toString()
 }
