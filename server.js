@@ -9,6 +9,8 @@ let validationWordList = new Set()
 const path = require('path')
 
 const app = express()
+// Respect proxy headers (Render, etc.) so req.protocol reflects HTTPS
+app.set('trust proxy', true)
 app.use(cors())
 app.use(express.json())
 
