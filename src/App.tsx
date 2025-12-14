@@ -21,10 +21,26 @@ import LoginForm from './components/LoginForm'
 
 const WORD_LENGTH = 5
 
-enum GameStatus {
+export enum GameStatus {
   Playing,
   Won,
   Lost,
+}
+
+export const generateEmojiGrid = (gameNum: number | null, gameGuesses: AtProtoServerGuess[], gameStatus: GameStatus): string => {
+  if (gameNum === null) return '';
+  const title = `Skyrdle ${gameNum} ${gameStatus === GameStatus.Won ? gameGuesses.length : 'X'}/6\n\n`;
+  const EMOJI_MAP = {
+    correct: '🟩',
+    present: '🟨',
+    absent: '⬛',
+  }
+
+  const grid = gameGuesses.map(guess =>
+    guess.evaluation.map(evalType => EMOJI_MAP[evalType]).join('')
+  ).join('\n')
+
+  return title + grid
 }
 
 const App: React.FC = () => {
@@ -168,38 +184,22 @@ const App: React.FC = () => {
     }
   }
 
-const generateEmojiGrid = (gameNum: number | null, gameGuesses: AtProtoServerGuess[], gameStatus: GameStatus): string => {
-  if (gameNum === null) return '';
-  const title = `Skyrdle ${gameNum} ${gameStatus === GameStatus.Won ? gameGuesses.length : 'X'}/6\n\n`;
-  const EMOJI_MAP = {
-    correct: '🟩',
-    present: '🟨',
-    absent: '⬛',
-  }
-
-  const grid = gameGuesses.map(guess =>
-    guess.evaluation.map(evalType => EMOJI_MAP[evalType]).join('')
-  ).join('\n')
-
-  return title + grid
-}
-
-const handleShare = async () => {
-  if (navigator.clipboard && shareText) {
-    try {
-      await navigator.clipboard.writeText(shareText)
-      Swal.fire({
-        title: 'Success!',
-        text: 'Results copied to clipboard!',
-        icon: 'success',
-        confirmButtonText: 'OK'
-      })
-    } catch (err) {
-      console.error('Failed to copy: ', err);
-      alert('Failed to copy results.')
+  const handleShare = async () => {
+    if (navigator.clipboard && shareText) {
+      try {
+        await navigator.clipboard.writeText(shareText)
+        Swal.fire({
+          title: 'Success!',
+          text: 'Results copied to clipboard!',
+          icon: 'success',
+          confirmButtonText: 'OK'
+        })
+      } catch (err) {
+        console.error('Failed to copy: ', err);
+        alert('Failed to copy results.')
+      }
     }
-  }
-};
+  };
 
   const handleSkeetResults = async () => {
     if (!shareText || !did) return
