@@ -7,7 +7,6 @@ const fs = require('fs')
 let wordList = []
 let validationWordList = new Set()
 const path = require('path')
-const { OAuthSession } = require('@atproto/oauth-client-node')
 
 const app = express()
 app.use(cors())
@@ -238,83 +237,6 @@ app.post('/api/guess', async (req, res) => {
   } catch (error) {
     console.error('Error processing guess:', error)
     res.status(500).json({ error: 'Failed to process guess' })
-  }
-})
-
-app.post('/api/auth/signin', async (req, res) => {
-  try {
-      const { handle } = await req.json()
-      const state = crypto.randomUUID()
-      const url = await client.authorize(handle, { state })
-      return res.json({ url })
-  } catch (err) {
-      console.error('Signin error', err)
-      return res.json({ error: 'Authentication failed' }, 400)
-  }
-})
-
-app.get('/api/auth/callback', async (req, res) => {
-  try {
-      const params = new URL(req.url).searchParams
-      const result = await client.callback(params)
-      if (!result?.session) {
-          return res.json({ error: 'Authentication failed' }, 400)
-      }
-      const token = createSignedToken(result.session.sub)
-      const cookie = serializeCookie(COOKIE_NAME, token, { maxAge: 60 * 60 * 24 * 7 })
-      const res = res.redirect(config.domain, 302)
-      res.headers.set('Set-Cookie', cookie)
-      return res
-  } catch (err) {
-      console.error('Callback error', err)
-      return res.json({ error: 'Authentication failed' }, 400)
-  }
-})
-
-app.get('/api/auth/status', async (req, res) => {
-  try {
-      const cookies = parseCookies(req.header('Cookie'))
-      const token = cookies[COOKIE_NAME]
-      const sub = token ? verifySignedToken(token) : null
-      if (!sub) return res.json({ authenticated: false })
-
-      let oauthSession;
-      try {
-          oauthSession = await client.restore(sub, 'auto');
-      } catch (_) {
-      }
-
-      if (!oauthSession) {
-          const stored = await sessionStore.get(sub)
-          if (!stored) {
-              const res = c.json({ authenticated: false })
-              res.headers.set('Set-Cookie', deleteCookie(COOKIE_NAME))
-              return res
-          }
-          return c.json({ authenticated: true, user: { sub } })
-      }
-
-      return c.json({ authenticated: true, user: { sub, pds: oauthSession.serverMetadata.issuer } })
-  } catch (err) {
-      console.error('Status check error', err)
-      return c.json({ authenticated: false })
-  }
-})
-
-app.post('/api/auth/logout', async (req, res) => {
-  try {
-      const cookies = parseCookies(req.header('Cookie'))
-      const token = cookies[COOKIE_NAME]
-      const sub = token ? verifySignedToken(token) : null
-      if (sub) {
-          await sessionStore.del(sub)
-      }
-      res.json({ success: true })
-      res.set('Set-Cookie', deleteCookie(COOKIE_NAME))
-      return res
-  } catch (err) {
-      console.error('Logout error', err)
-      return res.json({ error: 'Logout failed' }, 500)
   }
 })
 

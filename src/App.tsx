@@ -9,9 +9,8 @@
 * Root React component for Skyrdle.                                          
 */
 
-import React, { useState, useEffect, KeyboardEvent, ChangeEvent } from 'react'
-import { ServerGuess } from './atproto'
-import { login, saveScore, restoreSession, getScore, postSkeet, ServerGuess as AtProtoServerGuess } from './atproto'
+import React, { useState, useEffect, KeyboardEvent } from 'react'
+import { saveScore, getScore, postSkeet, initAuth, startLogin, logout, ServerGuess } from './atproto'
 import VirtualKeyboard from './components/VirtualKeyboard'
 import AboutModal from './components/AboutModal'
 import Footer from './components/Footer'
@@ -27,10 +26,10 @@ export enum GameStatus {
   Lost,
 }
 
-export const generateEmojiGrid = (gameNum: number | null, gameGuesses: AtProtoServerGuess[], gameStatus: GameStatus): string => {
+export const generateEmojiGrid = (gameNum: number | null, gameGuesses: ServerGuess[], gameStatus: GameStatus): string => {
   if (gameNum === null) return '';
   const title = `Skyrdle ${gameNum} ${gameStatus === GameStatus.Won ? gameGuesses.length : 'X'}/6\n\n`;
-  const EMOJI_MAP = {
+  const EMOJI_MAP: Record<'correct' | 'present' | 'absent', string> = {
     correct: '🟩',
     present: '🟨',
     absent: '⬛',
@@ -44,8 +43,7 @@ export const generateEmojiGrid = (gameNum: number | null, gameGuesses: AtProtoSe
 }
 
 const App: React.FC = () => {
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
+  const [handle, setHandle] = useState('');
   const [did, setDid] = useState<string | null>(null);
   const [status, setStatus] = useState<GameStatus>(GameStatus.Playing);
   const [gameNumber, setGameNumber] = useState<number | null>(null);
@@ -53,8 +51,6 @@ const App: React.FC = () => {
   const [maxGameNumber, setMaxGameNumber] = useState<number | null>(null);
   const [guesses, setGuesses] = useState<ServerGuess[]>([]);
   const [current, setCurrent] = useState<string[]>([]);
-  const [requires2FA, setRequires2FA] = useState(false);
-  const [twoFactorCode, setTwoFactorCode] = useState('');
   const [shareText, setShareText] = useState('');
   const [isPostingSkeet, setIsPostingSkeet] = useState(false)
   const [existingScore, setExistingScore] = useState<number | null | undefined>(undefined)
@@ -77,8 +73,8 @@ const App: React.FC = () => {
   // Restore session on mount
   useEffect(() => {
     (async () => {
-      const storedDid = await restoreSession()
-      if (storedDid) setDid(storedDid)
+      const restoredDid = await initAuth()
+      if (restoredDid) setDid(restoredDid)
     })()
   }, [])
   
@@ -116,7 +112,7 @@ const App: React.FC = () => {
     fetch(`/api/game?did=${userDid}`)
       .then(res => res.json())
       .then(data => {
-        const newGuesses = data.guesses as AtProtoServerGuess[];
+        const newGuesses = data.guesses as ServerGuess[];
         setGuesses(newGuesses);
         setGameNumber(data.gameNumber)
         setViewedGameNumber(data.gameNumber)
@@ -146,7 +142,7 @@ const App: React.FC = () => {
           }
           return
         }
-        const newGuesses = data.guesses as AtProtoServerGuess[]
+        const newGuesses = data.guesses as ServerGuess[]
         setGuesses(newGuesses)
         setViewedGameNumber(data.gameNumber)
         setStatus(GameStatus[data.status as keyof typeof GameStatus])
@@ -247,22 +243,16 @@ const App: React.FC = () => {
   }, [did, viewedGameNumber])
 
   /*
-   * Handle login
+   * Handle login via OAuth
    */
   const handleLogin = async () => {
+    if (!handle) {
+      alert('Please enter your handle')
+      return
+    }
     try {
-      const data = await login(
-        identifier,
-        password,
-        requires2FA ? twoFactorCode : undefined
-      )
-      setDid(data.did)
+      await startLogin(handle)
     } catch (e: any) {
-      if (e.error === 'AuthFactorTokenRequired') {
-        setRequires2FA(true)
-        setTwoFactorCode('')
-        return
-      }
       alert('Login failed: ' + (e.message || JSON.stringify(e)))
     }
   }
@@ -397,14 +387,9 @@ const App: React.FC = () => {
     <div className="app">
       {!did ? (
         <LoginForm
-          identifier={identifier}
-          password={password}
-          requires2FA={requires2FA}
-          twoFactorCode={twoFactorCode}
+          handle={handle}
+          onHandleChange={setHandle}
           onLoginAttempt={handleLogin}
-          onIdentifierChange={setIdentifier}
-          onPasswordChange={setPassword}
-          onTwoFactorCodeChange={setTwoFactorCode}
         />
       ) : (
         <>
@@ -471,7 +456,17 @@ const App: React.FC = () => {
               <ShareResults shareText={shareText} onShare={handleShare} onSkeet={handleSkeetResults} isPostingSkeet={isPostingSkeet} />
             )}
           </div>
-          <Footer onShowStats={() => setShowStats(true)} onShowAbout={() => setShowAbout(true)} onLogout={() => { localStorage.removeItem('skyrdleSession'); setDid(null); }} />
+          <Footer
+            onShowStats={() => setShowStats(true)}
+            onShowAbout={() => setShowAbout(true)}
+            onLogout={async () => {
+              await logout()
+              setDid(null)
+              setGuesses([])
+              setCurrent([])
+              setExistingScore(undefined)
+            }}
+          />
 
         {showAbout && (
           <AboutModal onClose={() => setShowAbout(false)} />
