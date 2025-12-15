@@ -6,7 +6,7 @@
 * /\__/ / |\  \ | | | |\ \| |/ /| |___| |___ 
 * \____/\_| \_/ \_/ \_| \_|___/ \_____|____/ 
 *                                           
-* About modal component for displaying information about the app.                                         
+* About modal component for displaying information about Skyrdle.                                         
 */
 
 export default function AboutModal({ onClose }: { onClose: () => void }) {
@@ -14,7 +14,7 @@ export default function AboutModal({ onClose }: { onClose: () => void }) {
     <div className="modal-overlay" onClick={() => onClose()}>
         <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2>Skyrdle</h2>
-            <p>made with &lt;3 by <a href="https://smol.farm" target="_blank" rel="noopener noreferrer">smol farm</a></p>
+            <p>made with 💜 by <a href="https://smol.farm" target="_blank" rel="noopener noreferrer">smol farm</a></p>
 
             <ul style={{listStyleType: 'none', fontSize: '0.8rem'}}>
                 <li>🧐 Guess the word of the day in 6 tries or less!</li>
