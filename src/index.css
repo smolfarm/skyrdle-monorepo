@@ -568,16 +568,18 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
 }
 
 .btn-text {
-  background: transparent;
-  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
-  box-shadow: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
 .btn-text:hover {
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
 }
 
 .social-link {
