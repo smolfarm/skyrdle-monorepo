@@ -125,13 +125,13 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
 .btn-login {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(78, 205, 255, 0.8);
-  background: linear-gradient(135deg, rgba(78, 205, 255, 0.35), rgba(140, 82, 255, 0.45));
-  color: #eaf7ff;
+  border: 1px solid rgba(80, 185, 255, 0.95);
+  background: linear-gradient(150deg, #53c8ff 0%, #2fa6ff 55%, #0f8aff 100%);
+  color: #f1f9ff;
   box-shadow:
-    0 10px 25px rgba(78, 205, 255, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
+    0 10px 25px rgba(47, 166, 255, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
   font-weight: bold;
   font-size: 1.5rem !important;
   border-radius: 20px !important;
