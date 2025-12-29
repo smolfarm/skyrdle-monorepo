@@ -9,9 +9,9 @@
 * Root React component for Skyrdle.                                          
 */
 
-import React, { useState, useEffect, KeyboardEvent, ChangeEvent } from 'react'
-import { ServerGuess } from './atproto'
-import { login, saveScore, restoreSession, getScore, postSkeet, ServerGuess as AtProtoServerGuess } from './atproto'
+import React, { useState, useEffect, KeyboardEvent } from 'react'
+import { saveScore, getScore, postSkeet, initAuth, startLogin, logout, ServerGuess } from './atproto'
+import { calculateKeyboardStatus } from './utils/keyboardUtils'
 import VirtualKeyboard from './components/VirtualKeyboard'
 import AboutModal from './components/AboutModal'
 import Footer from './components/Footer'
@@ -21,15 +21,30 @@ import LoginForm from './components/LoginForm'
 
 const WORD_LENGTH = 5
 
-enum GameStatus {
+export enum GameStatus {
   Playing,
   Won,
   Lost,
 }
 
+export const generateEmojiGrid = (gameNum: number | null, gameGuesses: ServerGuess[], gameStatus: GameStatus): string => {
+  if (gameNum === null) return '';
+  const title = `Skyrdle ${gameNum} ${gameStatus === GameStatus.Won ? gameGuesses.length : 'X'}/6\n\n`;
+  const EMOJI_MAP: Record<'correct' | 'present' | 'absent', string> = {
+    correct: '🟩',
+    present: '🟨',
+    absent: '⬛',
+  }
+
+  const grid = gameGuesses.map(guess =>
+    guess.evaluation.map(evalType => EMOJI_MAP[evalType]).join('')
+  ).join('\n')
+
+  return title + grid
+}
+
 const App: React.FC = () => {
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
+  const [handle, setHandle] = useState('');
   const [did, setDid] = useState<string | null>(null);
   const [status, setStatus] = useState<GameStatus>(GameStatus.Playing);
   const [gameNumber, setGameNumber] = useState<number | null>(null);
@@ -37,8 +52,6 @@ const App: React.FC = () => {
   const [maxGameNumber, setMaxGameNumber] = useState<number | null>(null);
   const [guesses, setGuesses] = useState<ServerGuess[]>([]);
   const [current, setCurrent] = useState<string[]>([]);
-  const [requires2FA, setRequires2FA] = useState(false);
-  const [twoFactorCode, setTwoFactorCode] = useState('');
   const [shareText, setShareText] = useState('');
   const [isPostingSkeet, setIsPostingSkeet] = useState(false)
   const [existingScore, setExistingScore] = useState<number | null | undefined>(undefined)
@@ -61,37 +74,10 @@ const App: React.FC = () => {
   // Restore session on mount
   useEffect(() => {
     (async () => {
-      const storedDid = await restoreSession()
-      if (storedDid) setDid(storedDid)
+      const restoredDid = await initAuth()
+      if (restoredDid) setDid(restoredDid)
     })()
   }, [])
-  
-  // Calculate keyboard key statuses with priority: correct > present > default > absent
-  const calculateKeyboardStatus = (currentGuesses: ServerGuess[]) => {
-    const newKeyboardStatus: Record<string, 'correct' | 'present' | 'absent' | null> = {}
-    
-    // Process all guesses to determine the status of each letter
-    currentGuesses.forEach(({ letters, evaluation }) => {
-      letters.forEach((letter, i) => {
-        const currentStatus = newKeyboardStatus[letter]
-        const newStatus = evaluation[i]
-        
-        // Apply priority rules: correct > present > default > absent
-        if (newStatus === 'correct') {
-          // Correct always takes priority
-          newKeyboardStatus[letter] = 'correct';
-        } else if (newStatus === 'present' && currentStatus !== 'correct') {
-          // Present takes priority unless the letter is already marked correct
-          newKeyboardStatus[letter] = 'present'
-        } else if (newStatus === 'absent' && currentStatus !== 'correct' && currentStatus !== 'present') {
-          // Absent only applies if the letter isn't already marked correct or present
-          newKeyboardStatus[letter] = 'absent'
-        }
-      })
-    })
-    
-    setKeyboardStatus(newKeyboardStatus)
-  };
 
   /*
    * Pull the current game from the server
@@ -100,7 +86,7 @@ const App: React.FC = () => {
     fetch(`/api/game?did=${userDid}`)
       .then(res => res.json())
       .then(data => {
-        const newGuesses = data.guesses as AtProtoServerGuess[];
+        const newGuesses = data.guesses as ServerGuess[];
         setGuesses(newGuesses);
         setGameNumber(data.gameNumber)
         setViewedGameNumber(data.gameNumber)
@@ -109,7 +95,7 @@ const App: React.FC = () => {
         setExistingScore(undefined)
         setCurrent([])
         setShareText('')
-        calculateKeyboardStatus(newGuesses)
+        setKeyboardStatus(calculateKeyboardStatus(newGuesses))
       })
       .catch(console.error)
   }
@@ -130,14 +116,14 @@ const App: React.FC = () => {
           }
           return
         }
-        const newGuesses = data.guesses as AtProtoServerGuess[]
+        const newGuesses = data.guesses as ServerGuess[]
         setGuesses(newGuesses)
         setViewedGameNumber(data.gameNumber)
         setStatus(GameStatus[data.status as keyof typeof GameStatus])
         setCurrent([]); // Clear current guess input
 
         // Calculate which keys should be disabled
-        calculateKeyboardStatus(newGuesses)
+        setKeyboardStatus(calculateKeyboardStatus(newGuesses))
         
         // Fetch score for the viewed game
         getScore(userDid, data.gameNumber).then(score => setExistingScore(score))
@@ -168,38 +154,22 @@ const App: React.FC = () => {
     }
   }
 
-const generateEmojiGrid = (gameNum: number | null, gameGuesses: AtProtoServerGuess[], gameStatus: GameStatus): string => {
-  if (gameNum === null) return '';
-  const title = `Skyrdle ${gameNum} ${gameStatus === GameStatus.Won ? gameGuesses.length : 'X'}/6\n\n`;
-  const EMOJI_MAP = {
-    correct: '🟩',
-    present: '🟨',
-    absent: '⬛',
-  }
-
-  const grid = gameGuesses.map(guess =>
-    guess.evaluation.map(evalType => EMOJI_MAP[evalType]).join('')
-  ).join('\n')
-
-  return title + grid
-}
-
-const handleShare = async () => {
-  if (navigator.clipboard && shareText) {
-    try {
-      await navigator.clipboard.writeText(shareText)
-      Swal.fire({
-        title: 'Success!',
-        text: 'Results copied to clipboard!',
-        icon: 'success',
-        confirmButtonText: 'OK'
-      })
-    } catch (err) {
-      console.error('Failed to copy: ', err);
-      alert('Failed to copy results.')
+  const handleShare = async () => {
+    if (navigator.clipboard && shareText) {
+      try {
+        await navigator.clipboard.writeText(shareText)
+        Swal.fire({
+          title: 'Success!',
+          text: 'Results copied to clipboard!',
+          icon: 'success',
+          confirmButtonText: 'OK'
+        })
+      } catch (err) {
+        console.error('Failed to copy: ', err);
+        alert('Failed to copy results.')
+      }
     }
-  }
-};
+  };
 
   const handleSkeetResults = async () => {
     if (!shareText || !did) return
@@ -247,22 +217,16 @@ const handleShare = async () => {
   }, [did, viewedGameNumber])
 
   /*
-   * Handle login
+   * Handle login via OAuth
    */
   const handleLogin = async () => {
+    if (!handle) {
+      alert('Please enter your handle')
+      return
+    }
     try {
-      const data = await login(
-        identifier,
-        password,
-        requires2FA ? twoFactorCode : undefined
-      )
-      setDid(data.did)
+      await startLogin(handle)
     } catch (e: any) {
-      if (e.error === 'AuthFactorTokenRequired') {
-        setRequires2FA(true)
-        setTwoFactorCode('')
-        return
-      }
       alert('Login failed: ' + (e.message || JSON.stringify(e)))
     }
   }
@@ -292,7 +256,7 @@ const handleShare = async () => {
           if (did && viewedGameNumber !== null) fetchSpecificGame(did, viewedGameNumber); // Refresh the viewed game's data
           setStatus(GameStatus[data.status as keyof typeof GameStatus]);
           setCurrent([]);
-          calculateKeyboardStatus(data.guesses)
+          setKeyboardStatus(calculateKeyboardStatus(data.guesses))
         })
         .catch(error => {
           console.error(error);
@@ -364,7 +328,7 @@ const handleShare = async () => {
       .then(data => {
         const newGuesses = data.guesses
         setGuesses(newGuesses)
-        calculateKeyboardStatus(newGuesses)
+        setKeyboardStatus(calculateKeyboardStatus(newGuesses))
         if (did && viewedGameNumber !== null) fetchSpecificGame(did, viewedGameNumber)
         setStatus(GameStatus[data.status as keyof typeof GameStatus])
         setCurrent([])
@@ -397,14 +361,9 @@ const handleShare = async () => {
     <div className="app">
       {!did ? (
         <LoginForm
-          identifier={identifier}
-          password={password}
-          requires2FA={requires2FA}
-          twoFactorCode={twoFactorCode}
+          handle={handle}
+          onHandleChange={setHandle}
           onLoginAttempt={handleLogin}
-          onIdentifierChange={setIdentifier}
-          onPasswordChange={setPassword}
-          onTwoFactorCodeChange={setTwoFactorCode}
         />
       ) : (
         <>
@@ -471,7 +430,17 @@ const handleShare = async () => {
               <ShareResults shareText={shareText} onShare={handleShare} onSkeet={handleSkeetResults} isPostingSkeet={isPostingSkeet} />
             )}
           </div>
-          <Footer onShowStats={() => setShowStats(true)} onShowAbout={() => setShowAbout(true)} onLogout={() => { localStorage.removeItem('skyrdleSession'); setDid(null); }} />
+          <Footer
+            onShowStats={() => setShowStats(true)}
+            onShowAbout={() => setShowAbout(true)}
+            onLogout={async () => {
+              await logout()
+              setDid(null)
+              setGuesses([])
+              setCurrent([])
+              setExistingScore(undefined)
+            }}
+          />
 
         {showAbout && (
           <AboutModal onClose={() => setShowAbout(false)} />

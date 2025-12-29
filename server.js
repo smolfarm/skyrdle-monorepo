@@ -4,14 +4,44 @@ const mongoose = require('mongoose')
 require('dotenv').config()
 const crypto = require('crypto')
 const fs = require('fs')
+const { evaluateGuess } = require('./src/utils/evaluateGuess')
+const { getEasternDate, calculateGameNumber, getTargetWordForGameNumber } = require('./src/utils/dateUtils')
 let wordList = []
 let validationWordList = new Set()
 const path = require('path')
-const { OAuthSession } = require('@atproto/oauth-client-node')
 
 const app = express()
+// Respect proxy headers (Render, etc.) so req.protocol reflects HTTPS
+app.set('trust proxy', true)
 app.use(cors())
 app.use(express.json())
+
+const explicitOrigin = process.env.PUBLIC_ORIGIN || process.env.APP_ORIGIN
+function getPublicOrigin(req) {
+  if (explicitOrigin) return explicitOrigin.replace(/\/$/, '')
+  return `${req.protocol}://${req.get('host')}`
+}
+
+app.get('/.well-known/client-metadata.json', (req, res) => {
+  const origin = getPublicOrigin(req)
+  const clientId = `${origin}/.well-known/client-metadata.json`
+  res.setHeader('Cache-Control', 'public, max-age=300')
+  res.json({
+    client_id: clientId,
+    client_name: 'Skyrdle',
+    application_type: 'web',
+    redirect_uris: [
+      `${origin}/`,
+      `${origin}`
+    ],
+    grant_types: ['authorization_code', 'refresh_token'],
+    response_types: ['code'],
+    scope:
+      'atproto repo:farm.smol.games.skyrdle.score?action=create&action=update repo:app.bsky.feed.post?action=create',
+    token_endpoint_auth_method: 'none',
+    dpop_bound_access_tokens: true,
+  })
+})
 
 // Load validation word list from words.json
 try {
@@ -45,20 +75,11 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
   })
   .catch(err => console.error('MongoDB connection error:', err))
 
-// Epoch at June 13th, 2025 midnight Eastern (UTC-5)
-// This marks Game #1
-const epochEastern = new Date('2025-06-13T00:00:00-05:00')
-function getEasternDate() {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-}
-
 // Helper to get or init game for did
 async function getGame(did) {
-  const nowE = getEasternDate();
-  const diff = Math.floor((nowE - epochEastern) / 86400000);
-  const currentGameNumber = diff + 1;
+  const currentGameNumber = calculateGameNumber();
   if (wordList.length === 0) throw new Error('Word list not loaded')
-  const currentTargetWord = wordList[diff % wordList.length];
+  const currentTargetWord = getTargetWordForGameNumber(currentGameNumber, wordList);
 
   // Find game for the current day for this DID
   let game = await Game.findOne({ did, gameNumber: currentGameNumber });
@@ -115,9 +136,7 @@ app.get('/api/game/:gameNumber', async (req, res) => {
     }
 
     // Determine the maximum possible game number (current day's game number)
-    const nowE = getEasternDate();
-    const currentEpochDiff = Math.floor((nowE - epochEastern) / 86400000);
-    const maxPossibleGameNumber = currentEpochDiff + 1;
+    const maxPossibleGameNumber = calculateGameNumber();
 
     if (parsedGameNumber > maxPossibleGameNumber) {
       return res.status(400).json({ error: 'Cannot access future games' });
@@ -127,7 +146,7 @@ app.get('/api/game/:gameNumber', async (req, res) => {
 
     if (!game) {
       // Game doesn't exist, create it if it's a valid past or current game number
-      const targetWordForGame = wordList[(parsedGameNumber - 1) % wordList.length];
+      const targetWordForGame = getTargetWordForGameNumber(parsedGameNumber, wordList);
       game = new Game({
         did,
         targetWord: targetWordForGame,
@@ -166,9 +185,7 @@ app.post('/api/guess', async (req, res) => {
     }
 
     // Determine the maximum possible game number (current day's game number)
-    const nowE = getEasternDate();
-    const currentEpochDiff = Math.floor((nowE - epochEastern) / 86400000);
-    const maxPossibleGameNumber = currentEpochDiff + 1;
+    const maxPossibleGameNumber = calculateGameNumber();
 
     if (parsedGameNumber > maxPossibleGameNumber) {
       return res.status(400).json({ error: 'Cannot make guesses for future games' });
@@ -178,7 +195,7 @@ app.post('/api/guess', async (req, res) => {
 
     if (!game) {
       // Game doesn't exist for this did and gameNumber, create it.
-      const targetWordForGame = wordList[(parsedGameNumber - 1) % wordList.length]
+      const targetWordForGame = getTargetWordForGameNumber(parsedGameNumber, wordList)
       game = new Game({
         did,
         targetWord: targetWordForGame,
@@ -192,29 +209,8 @@ app.post('/api/guess', async (req, res) => {
 
     if (game.status !== 'Playing') return res.status(400).json({ error: 'Game is already over (Won or Lost)' });
 
-    // Evaluate guess with duplicate handling
-    const guessChars = guess.toUpperCase().split('')
-    const targetChars = game.targetWord.toUpperCase().split('')
-    const evals = Array(guessChars.length).fill(null)
-    
-    // First pass: correct positions
-    for (let i = 0; i < guessChars.length; i++) {
-      if (guessChars[i] === targetChars[i]) {
-        evals[i] = 'correct'
-        targetChars[i] = null
-      }
-    }
-    // Second pass: present or absent
-    for (let i = 0; i < guessChars.length; i++) {
-      if (evals[i]) continue
-      const idx = targetChars.indexOf(guessChars[i])
-      if (idx !== -1) {
-        evals[i] = 'present'
-        targetChars[idx] = null
-      } else {
-        evals[i] = 'absent'
-      }
-    }
+    // Evaluate guess with duplicate handling using extracted utility
+    const evals = evaluateGuess(guess, game.targetWord)
 
     game.guesses.push({ letters: guess.toUpperCase().split(''), evaluation: evals });
 
@@ -238,83 +234,6 @@ app.post('/api/guess', async (req, res) => {
   } catch (error) {
     console.error('Error processing guess:', error)
     res.status(500).json({ error: 'Failed to process guess' })
-  }
-})
-
-app.post('/api/auth/signin', async (req, res) => {
-  try {
-      const { handle } = await req.json()
-      const state = crypto.randomUUID()
-      const url = await client.authorize(handle, { state })
-      return res.json({ url })
-  } catch (err) {
-      console.error('Signin error', err)
-      return res.json({ error: 'Authentication failed' }, 400)
-  }
-})
-
-app.get('/api/auth/callback', async (req, res) => {
-  try {
-      const params = new URL(req.url).searchParams
-      const result = await client.callback(params)
-      if (!result?.session) {
-          return res.json({ error: 'Authentication failed' }, 400)
-      }
-      const token = createSignedToken(result.session.sub)
-      const cookie = serializeCookie(COOKIE_NAME, token, { maxAge: 60 * 60 * 24 * 7 })
-      const res = res.redirect(config.domain, 302)
-      res.headers.set('Set-Cookie', cookie)
-      return res
-  } catch (err) {
-      console.error('Callback error', err)
-      return res.json({ error: 'Authentication failed' }, 400)
-  }
-})
-
-app.get('/api/auth/status', async (req, res) => {
-  try {
-      const cookies = parseCookies(req.header('Cookie'))
-      const token = cookies[COOKIE_NAME]
-      const sub = token ? verifySignedToken(token) : null
-      if (!sub) return res.json({ authenticated: false })
-
-      let oauthSession;
-      try {
-          oauthSession = await client.restore(sub, 'auto');
-      } catch (_) {
-      }
-
-      if (!oauthSession) {
-          const stored = await sessionStore.get(sub)
-          if (!stored) {
-              const res = c.json({ authenticated: false })
-              res.headers.set('Set-Cookie', deleteCookie(COOKIE_NAME))
-              return res
-          }
-          return c.json({ authenticated: true, user: { sub } })
-      }
-
-      return c.json({ authenticated: true, user: { sub, pds: oauthSession.serverMetadata.issuer } })
-  } catch (err) {
-      console.error('Status check error', err)
-      return c.json({ authenticated: false })
-  }
-})
-
-app.post('/api/auth/logout', async (req, res) => {
-  try {
-      const cookies = parseCookies(req.header('Cookie'))
-      const token = cookies[COOKIE_NAME]
-      const sub = token ? verifySignedToken(token) : null
-      if (sub) {
-          await sessionStore.del(sub)
-      }
-      res.json({ success: true })
-      res.set('Set-Cookie', deleteCookie(COOKIE_NAME))
-      return res
-  } catch (err) {
-      console.error('Logout error', err)
-      return res.json({ error: 'Logout failed' }, 500)
   }
 })
 

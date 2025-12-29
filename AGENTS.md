@@ -1,0 +1,1 @@
+* This is a monorepo with multiple projects inside of it, whose structure and independence should be preserved.
