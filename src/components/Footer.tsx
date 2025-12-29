@@ -12,13 +12,15 @@
 type FooterProps = {
     onShowStats: () => void
     onShowAbout: () => void
+    onShowSettings: () => void
     onLogout: () => void
 }
 
-export default function Footer({ onShowStats, onShowAbout, onLogout }: FooterProps) {
+export default function Footer({ onShowStats, onShowAbout, onShowSettings, onLogout }: FooterProps) {
     return (
         <footer className="game-footer">
             <button type="button" className="btn-glass btn-sm" onClick={() => onShowStats()}>Stats</button>
+            <button type="button" className="btn-glass btn-sm" onClick={() => onShowSettings()}>Settings</button>
             <button type="button" className="btn-glass btn-sm" onClick={() => onShowAbout()}>About</button>
             <button type="button" className="btn-glass btn-sm" onClick={() => onLogout()}>Logout</button>
         </footer>
