@@ -1,52 +1,72 @@
-import { ChangeEvent } from 'react'
+import { ChangeEvent, useState } from 'react'
+import { SiBluesky } from 'react-icons/si'
 import logo from '../logo.jpg'
+import AboutModal from './AboutModal'
 
 type LoginFormProps = {
-    identifier: string
-    password: string
-    requires2FA: boolean
-    twoFactorCode: string
+    handle: string
+    onHandleChange: (handle: string) => void
     onLoginAttempt: () => void
-    onIdentifierChange: (identifier: string) => void
-    onPasswordChange: (password: string) => void
-    onTwoFactorCodeChange: (twoFactorCode: string) => void
 }
 
-export default function LoginForm({ identifier, password, requires2FA, twoFactorCode, onLoginAttempt, onIdentifierChange, onPasswordChange, onTwoFactorCodeChange }: LoginFormProps) {
+export default function LoginForm({ handle, onHandleChange, onLoginAttempt }: LoginFormProps) {
+    const [showAbout, setShowAbout] = useState(false)
+
     return (
         <div className="login">
-            <img src={logo} alt="Skyrdle Logo" className="login-logo" />
-            <h2>Login to Skyrdle</h2>
-            <input
-                placeholder="Bluesky Username or Email"
-                value={identifier}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => onIdentifierChange(e.target.value)}
-            />
-            <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => onPasswordChange(e.target.value)}
-            />
-            {requires2FA && (
-                <input
-                    placeholder="2FA Code"
-                    value={twoFactorCode}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => onTwoFactorCodeChange(e.target.value)}
-                />
-            )}
-            <button onClick={onLoginAttempt} className="btn-glass">Login</button>
+            <div className="login-container">
+                <img src={logo} alt="Skyrdle Logo" className="login-logo" />
 
-            <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-                <a
-                    href="https://smol.life/profile/did:plc:jylenhzj4u2te27qmcrdjtoh"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', color: '#1DA1F2' }}
+                <div className="login-header">
+                    <h1 className="login-title">Skyrdle</h1>
+                    <p className="login-subtitle">Daily Word Puzzle</p>
+                </div>
+
+                <form
+                    className="login-form"
+                    onSubmit={(e) => {
+                        e.preventDefault()
+                        onLoginAttempt()
+                    }}
                 >
-                Follow us on Bluesky
-                </a>
+                    <div className="input-wrapper">
+                        <input
+                            className="login-input"
+                            placeholder="Bluesky Handle or DID"
+                            value={handle}
+                            onChange={(e: ChangeEvent<HTMLInputElement>) => onHandleChange(e.target.value)}
+                            autoFocus
+                        />
+                    </div>
+                    <button type="submit" className="btn-glass btn-login">
+                        Login
+                    </button>
+                </form>
+
+                <div className="login-footer">
+                    <button
+                        type="button"
+                        onClick={() => setShowAbout(true)}
+                        className="btn-glass btn-text"
+                    >
+                        About
+                    </button>
+                    <a
+                        href="https://bsky.app/profile/did:plc:jylenhzj4u2te27qmcrdjtoh"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="social-link"
+                        aria-label="Follow us on Bluesky"
+                    >
+                        <SiBluesky size={20} />
+                        <span>Follow</span>
+                    </a>
+                </div>
             </div>
+
+            {showAbout && (
+                <AboutModal onClose={() => setShowAbout(false)} />
+            )}
         </div>
     )
 }

@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    allowedHosts: ['atproto-monorepo.onrender.com', 'skyrdle.com'],
     proxy: {
       // Proxy AT Protocol XRPC requests to avoid CORS
       '/xrpc': {
@@ -19,6 +20,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: path => path.replace(/^\/api/, '/api'),
+      },
+      // Serve OAuth client metadata from backend (avoids dev server 404/HTML)
+      '/.well-known': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false,
       },
     },
   },
