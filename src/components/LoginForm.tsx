@@ -19,7 +19,7 @@ export default function LoginForm({ handle, onHandleChange, onLoginAttempt }: Lo
 
                 <div className="login-header">
                     <h1 className="login-title">Skyrdle</h1>
-                    <p className="login-subtitle">Daily Puzzle Game</p>
+                    <p className="login-subtitle">Daily Word Puzzle</p>
                 </div>
 
                 <form
@@ -32,7 +32,7 @@ export default function LoginForm({ handle, onHandleChange, onLoginAttempt }: Lo
                     <div className="input-wrapper">
                         <input
                             className="login-input"
-                            placeholder="Bluesky handle or DID"
+                            placeholder="Bluesky Handle or DID"
                             value={handle}
                             onChange={(e: ChangeEvent<HTMLInputElement>) => onHandleChange(e.target.value)}
                             autoFocus
