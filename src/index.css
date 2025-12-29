@@ -692,3 +692,105 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
   font-size: 1.2rem;
   font-weight: bold;
 }
+
+/* Settings Modal Styles */
+.settings-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.settings-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: left;
+}
+
+.settings-label span:first-child {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.settings-description {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 28px;
+  transition: 0.3s;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.toggle-slider::before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: rgba(78, 205, 255, 0.6);
+  border-color: rgba(78, 205, 255, 0.8);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(24px);
+}
+
+/* Colorblind Mode - Blue & Orange */
+body.colorblind .correct {
+  background: rgba(56, 152, 236, 0.8);
+  border-color: rgba(56, 152, 236, 0.9);
+  box-shadow: 0 4px 8px rgba(56, 152, 236, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+body.colorblind .present {
+  background: rgba(245, 158, 66, 0.8);
+  border-color: rgba(245, 158, 66, 0.9);
+  box-shadow: 0 4px 8px rgba(245, 158, 66, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+body.colorblind .key-correct {
+  background: rgba(56, 152, 236, 0.8);
+  border-color: rgba(56, 152, 236, 0.9);
+  box-shadow: 0 4px 8px rgba(56, 152, 236, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+body.colorblind .key-present {
+  background: rgba(245, 158, 66, 0.8);
+  border-color: rgba(245, 158, 66, 0.9);
+  box-shadow: 0 4px 8px rgba(245, 158, 66, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}

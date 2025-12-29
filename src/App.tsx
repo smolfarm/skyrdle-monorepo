@@ -14,6 +14,7 @@ import { saveScore, getScore, postSkeet, initAuth, startLogin, logout, ServerGue
 import { calculateKeyboardStatus } from './utils/keyboardUtils'
 import VirtualKeyboard from './components/VirtualKeyboard'
 import AboutModal from './components/AboutModal'
+import SettingsModal from './components/SettingsModal'
 import Footer from './components/Footer'
 import ShareResults from './components/ShareResults'
 import Swal from 'sweetalert2'
@@ -58,6 +59,7 @@ const App: React.FC = () => {
   const [keyboardStatus, setKeyboardStatus] = useState<Record<string, 'correct' | 'present' | 'absent' | null>>({})
   const [showAbout, setShowAbout] = useState(false)
   const [showStats, setShowStats] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [stats, setStats] = useState<{ currentStreak: number; gamesWon: number; averageScore: number } | null>(null)
   const [isInvalidGuess, setIsInvalidGuess] = useState(false)
 
@@ -433,6 +435,7 @@ const App: React.FC = () => {
           <Footer
             onShowStats={() => setShowStats(true)}
             onShowAbout={() => setShowAbout(true)}
+            onShowSettings={() => setShowSettings(true)}
             onLogout={async () => {
               await logout()
               setDid(null)
@@ -444,6 +447,10 @@ const App: React.FC = () => {
 
         {showAbout && (
           <AboutModal onClose={() => setShowAbout(false)} />
+        )}
+
+        {showSettings && (
+          <SettingsModal onClose={() => setShowSettings(false)} />
         )}
 
         {showStats && (
