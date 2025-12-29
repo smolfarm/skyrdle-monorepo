@@ -11,6 +11,7 @@
 
 import React, { useState, useEffect, KeyboardEvent } from 'react'
 import { saveScore, getScore, postSkeet, initAuth, startLogin, logout, ServerGuess } from './atproto'
+import { calculateKeyboardStatus } from './utils/keyboardUtils'
 import VirtualKeyboard from './components/VirtualKeyboard'
 import AboutModal from './components/AboutModal'
 import Footer from './components/Footer'
@@ -77,33 +78,6 @@ const App: React.FC = () => {
       if (restoredDid) setDid(restoredDid)
     })()
   }, [])
-  
-  // Calculate keyboard key statuses with priority: correct > present > default > absent
-  const calculateKeyboardStatus = (currentGuesses: ServerGuess[]) => {
-    const newKeyboardStatus: Record<string, 'correct' | 'present' | 'absent' | null> = {}
-    
-    // Process all guesses to determine the status of each letter
-    currentGuesses.forEach(({ letters, evaluation }) => {
-      letters.forEach((letter, i) => {
-        const currentStatus = newKeyboardStatus[letter]
-        const newStatus = evaluation[i]
-        
-        // Apply priority rules: correct > present > default > absent
-        if (newStatus === 'correct') {
-          // Correct always takes priority
-          newKeyboardStatus[letter] = 'correct';
-        } else if (newStatus === 'present' && currentStatus !== 'correct') {
-          // Present takes priority unless the letter is already marked correct
-          newKeyboardStatus[letter] = 'present'
-        } else if (newStatus === 'absent' && currentStatus !== 'correct' && currentStatus !== 'present') {
-          // Absent only applies if the letter isn't already marked correct or present
-          newKeyboardStatus[letter] = 'absent'
-        }
-      })
-    })
-    
-    setKeyboardStatus(newKeyboardStatus)
-  };
 
   /*
    * Pull the current game from the server
@@ -121,7 +95,7 @@ const App: React.FC = () => {
         setExistingScore(undefined)
         setCurrent([])
         setShareText('')
-        calculateKeyboardStatus(newGuesses)
+        setKeyboardStatus(calculateKeyboardStatus(newGuesses))
       })
       .catch(console.error)
   }
@@ -149,7 +123,7 @@ const App: React.FC = () => {
         setCurrent([]); // Clear current guess input
 
         // Calculate which keys should be disabled
-        calculateKeyboardStatus(newGuesses)
+        setKeyboardStatus(calculateKeyboardStatus(newGuesses))
         
         // Fetch score for the viewed game
         getScore(userDid, data.gameNumber).then(score => setExistingScore(score))
@@ -282,7 +256,7 @@ const App: React.FC = () => {
           if (did && viewedGameNumber !== null) fetchSpecificGame(did, viewedGameNumber); // Refresh the viewed game's data
           setStatus(GameStatus[data.status as keyof typeof GameStatus]);
           setCurrent([]);
-          calculateKeyboardStatus(data.guesses)
+          setKeyboardStatus(calculateKeyboardStatus(data.guesses))
         })
         .catch(error => {
           console.error(error);
@@ -354,7 +328,7 @@ const App: React.FC = () => {
       .then(data => {
         const newGuesses = data.guesses
         setGuesses(newGuesses)
-        calculateKeyboardStatus(newGuesses)
+        setKeyboardStatus(calculateKeyboardStatus(newGuesses))
         if (did && viewedGameNumber !== null) fetchSpecificGame(did, viewedGameNumber)
         setStatus(GameStatus[data.status as keyof typeof GameStatus])
         setCurrent([])

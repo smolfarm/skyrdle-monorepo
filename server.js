@@ -4,6 +4,8 @@ const mongoose = require('mongoose')
 require('dotenv').config()
 const crypto = require('crypto')
 const fs = require('fs')
+const { evaluateGuess } = require('./src/utils/evaluateGuess')
+const { getEasternDate, calculateGameNumber, getTargetWordForGameNumber } = require('./src/utils/dateUtils')
 let wordList = []
 let validationWordList = new Set()
 const path = require('path')
@@ -73,20 +75,11 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
   })
   .catch(err => console.error('MongoDB connection error:', err))
 
-// Epoch at June 13th, 2025 midnight Eastern (UTC-5)
-// This marks Game #1
-const epochEastern = new Date('2025-06-13T00:00:00-05:00')
-function getEasternDate() {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-}
-
 // Helper to get or init game for did
 async function getGame(did) {
-  const nowE = getEasternDate();
-  const diff = Math.floor((nowE - epochEastern) / 86400000);
-  const currentGameNumber = diff + 1;
+  const currentGameNumber = calculateGameNumber();
   if (wordList.length === 0) throw new Error('Word list not loaded')
-  const currentTargetWord = wordList[diff % wordList.length];
+  const currentTargetWord = getTargetWordForGameNumber(currentGameNumber, wordList);
 
   // Find game for the current day for this DID
   let game = await Game.findOne({ did, gameNumber: currentGameNumber });
@@ -143,9 +136,7 @@ app.get('/api/game/:gameNumber', async (req, res) => {
     }
 
     // Determine the maximum possible game number (current day's game number)
-    const nowE = getEasternDate();
-    const currentEpochDiff = Math.floor((nowE - epochEastern) / 86400000);
-    const maxPossibleGameNumber = currentEpochDiff + 1;
+    const maxPossibleGameNumber = calculateGameNumber();
 
     if (parsedGameNumber > maxPossibleGameNumber) {
       return res.status(400).json({ error: 'Cannot access future games' });
@@ -155,7 +146,7 @@ app.get('/api/game/:gameNumber', async (req, res) => {
 
     if (!game) {
       // Game doesn't exist, create it if it's a valid past or current game number
-      const targetWordForGame = wordList[(parsedGameNumber - 1) % wordList.length];
+      const targetWordForGame = getTargetWordForGameNumber(parsedGameNumber, wordList);
       game = new Game({
         did,
         targetWord: targetWordForGame,
@@ -194,9 +185,7 @@ app.post('/api/guess', async (req, res) => {
     }
 
     // Determine the maximum possible game number (current day's game number)
-    const nowE = getEasternDate();
-    const currentEpochDiff = Math.floor((nowE - epochEastern) / 86400000);
-    const maxPossibleGameNumber = currentEpochDiff + 1;
+    const maxPossibleGameNumber = calculateGameNumber();
 
     if (parsedGameNumber > maxPossibleGameNumber) {
       return res.status(400).json({ error: 'Cannot make guesses for future games' });
@@ -206,7 +195,7 @@ app.post('/api/guess', async (req, res) => {
 
     if (!game) {
       // Game doesn't exist for this did and gameNumber, create it.
-      const targetWordForGame = wordList[(parsedGameNumber - 1) % wordList.length]
+      const targetWordForGame = getTargetWordForGameNumber(parsedGameNumber, wordList)
       game = new Game({
         did,
         targetWord: targetWordForGame,
@@ -220,29 +209,8 @@ app.post('/api/guess', async (req, res) => {
 
     if (game.status !== 'Playing') return res.status(400).json({ error: 'Game is already over (Won or Lost)' });
 
-    // Evaluate guess with duplicate handling
-    const guessChars = guess.toUpperCase().split('')
-    const targetChars = game.targetWord.toUpperCase().split('')
-    const evals = Array(guessChars.length).fill(null)
-    
-    // First pass: correct positions
-    for (let i = 0; i < guessChars.length; i++) {
-      if (guessChars[i] === targetChars[i]) {
-        evals[i] = 'correct'
-        targetChars[i] = null
-      }
-    }
-    // Second pass: present or absent
-    for (let i = 0; i < guessChars.length; i++) {
-      if (evals[i]) continue
-      const idx = targetChars.indexOf(guessChars[i])
-      if (idx !== -1) {
-        evals[i] = 'present'
-        targetChars[idx] = null
-      } else {
-        evals[i] = 'absent'
-      }
-    }
+    // Evaluate guess with duplicate handling using extracted utility
+    const evals = evaluateGuess(guess, game.targetWord)
 
     game.guesses.push({ letters: guess.toUpperCase().split(''), evaluation: evals });
 
