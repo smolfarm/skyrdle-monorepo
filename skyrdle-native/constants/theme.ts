@@ -19,12 +19,52 @@ export const Colors = {
   },
   dark: {
     text: '#ECEDEE',
-    background: '#151718',
+    background: '#121213',
     tint: tintColorDark,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
   },
+};
+
+// Game-specific colors
+export const GameColors = {
+  // Standard colors
+  correct: 'rgba(83, 141, 78, 0.9)',
+  correctBorder: 'rgba(83, 141, 78, 1)',
+  present: 'rgba(181, 159, 59, 0.9)',
+  presentBorder: 'rgba(181, 159, 59, 1)',
+  absent: 'rgba(58, 58, 60, 0.9)',
+  absentBorder: 'rgba(58, 58, 60, 1)',
+
+  // Colorblind-friendly colors
+  correctColorblind: 'rgba(56, 152, 236, 0.9)',
+  correctColorblindBorder: 'rgba(56, 152, 236, 1)',
+  presentColorblind: 'rgba(245, 158, 66, 0.9)',
+  presentColorblindBorder: 'rgba(245, 158, 66, 1)',
+
+  // UI colors
+  tileEmpty: 'rgba(58, 58, 60, 0.5)',
+  tileEmptyBorder: 'rgba(255, 255, 255, 0.2)',
+  tileFilled: 'rgba(58, 58, 60, 0.8)',
+  tileFilledBorder: 'rgba(255, 255, 255, 0.4)',
+
+  // Keyboard colors
+  keyDefault: 'rgba(255, 255, 255, 0.1)',
+  keyDefaultBorder: 'rgba(255, 255, 255, 0.2)',
+
+  // Background
+  background: '#121213',
+  surface: 'rgba(30, 30, 35, 0.95)',
+
+  // Text
+  textPrimary: '#ffffff',
+  textSecondary: 'rgba(255, 255, 255, 0.6)',
+
+  // Accent
+  accent: '#4ecdff',
+  accentGradientStart: '#53c8ff',
+  accentGradientEnd: '#0f8aff',
 };
 
 export const Fonts = Platform.select({
