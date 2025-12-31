@@ -32,7 +32,8 @@ app.get('/.well-known/client-metadata.json', (req, res) => {
     application_type: 'web',
     redirect_uris: [
       `${origin}/`,
-      `${origin}`
+      `${origin}`,
+      'skyrdle://'
     ],
     grant_types: ['authorization_code', 'refresh_token'],
     response_types: ['code'],

@@ -12,7 +12,7 @@ const BLUESKY_TOKEN_URL = 'https://bsky.social/oauth/token'
 
 // Redirect URI for the app
 const redirectUri = AuthSession.makeRedirectUri({
-  scheme: 'skyrdlenative',
+  scheme: 'skyrdle',
 })
 
 export interface AuthState {
