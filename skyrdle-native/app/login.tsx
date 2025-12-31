@@ -50,19 +50,7 @@ export default function LoginScreen() {
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Skyrdle</Text>
-          <Text style={styles.subtitle}>A daily word game on Bluesky</Text>
-        </View>
-
-        <View style={styles.features}>
-          <View style={styles.featureItem}>
-            <Text style={styles.featureEmoji}>daily word puzzle</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <Text style={styles.featureEmoji}>scores saved to your Bluesky account</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <Text style={styles.featureEmoji}>share results with friends</Text>
-          </View>
+          <Text style={styles.subtitle}>Daily Word Puzzle</Text>
         </View>
 
         <View style={styles.form}>
