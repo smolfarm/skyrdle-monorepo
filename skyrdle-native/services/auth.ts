@@ -69,22 +69,24 @@ export async function clearAuthState(): Promise<void> {
  */
 export async function initAuth(): Promise<AuthState | null> {
   try {
-    const client = await getOAuthClient()
-    const result = await client.init()
-
-    if (result?.session) {
-      agent = new Agent(result.session)
-      const state: AuthState = {
-        did: result.session.sub,
-        handle: result.session.sub, // Will be updated with actual handle
-      }
-      await saveAuthState(state)
-      console.log('[Skyrdle Auth] Session restored for:', result.session.sub)
-      return state
+    const existingState = await loadAuthState()
+    if (!existingState?.did) {
+      console.log('[Skyrdle Auth] No stored auth state on init')
+      return null
     }
 
-    console.log('[Skyrdle Auth] No session found on init')
-    return null
+    const client = await getOAuthClient()
+    const session = await client.restore(existingState.did, 'auto')
+
+    agent = new Agent(session)
+    console.log('[Skyrdle Auth] Session restored for:', session.sub)
+
+    const state: AuthState = {
+      did: session.sub,
+      handle: existingState.handle ?? session.sub,
+    }
+    await saveAuthState(state)
+    return state
   } catch (error) {
     console.error('[Skyrdle Auth] Init error:', error)
     return null
