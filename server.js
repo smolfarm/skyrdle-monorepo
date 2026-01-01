@@ -33,7 +33,7 @@ app.get('/.well-known/client-metadata.json', (req, res) => {
     redirect_uris: [
       `${origin}/`,
       `${origin}`,
-      'skyrdle://'
+      'farm.smol.games.skyrdle://oauth/callback'
     ],
     grant_types: ['authorization_code', 'refresh_token'],
     response_types: ['code'],
