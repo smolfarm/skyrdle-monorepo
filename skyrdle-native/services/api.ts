@@ -1,9 +1,7 @@
 import type { Evaluation } from '@/utils/evaluate-guess'
 
-// API base URL - update for production
-const API_BASE_URL = __DEV__
-  ? 'http://localhost:4000'
-  : 'https://skyrdle.com'
+// Always hit production API
+const API_BASE_URL = 'https://skyrdle.com'
 
 export interface ServerGuess {
   letters: string[]
