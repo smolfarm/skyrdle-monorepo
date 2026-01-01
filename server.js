@@ -52,7 +52,7 @@ app.get('/.well-known/client-metadata-native.json', (req, res) => {
     client_name: 'Skyrdle',
     application_type: 'native',
     redirect_uris: [
-      'farm.smol.games.skyrdle:/callback',
+      'com.skyrdle:/callback',
     ],
     grant_types: ['authorization_code', 'refresh_token'],
     response_types: ['code'],
