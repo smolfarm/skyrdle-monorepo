@@ -1,25 +1,40 @@
-import * as AuthSession from 'expo-auth-session'
-import * as Crypto from 'expo-crypto'
-import * as WebBrowser from 'expo-web-browser'
+import { Agent } from '@atproto/api'
+import { ExpoOAuthClient, ExpoOAuthClientOptions } from '@atproto/oauth-client-expo'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-
-// Complete any pending auth sessions
-WebBrowser.maybeCompleteAuthSession()
+import * as Crypto from 'expo-crypto'
 
 const AUTH_STORAGE_KEY = '@skyrdle/auth'
-const BLUESKY_AUTH_URL = 'https://bsky.social/oauth/authorize'
-const BLUESKY_TOKEN_URL = 'https://bsky.social/oauth/token'
-
-// Redirect URI for the app
-const redirectUri = AuthSession.makeRedirectUri({
-  scheme: 'skyrdle',
-})
 
 export interface AuthState {
   did: string
   handle: string
-  accessToken: string
-  refreshToken?: string
+}
+
+let oauthClient: ExpoOAuthClient | null = null
+let agent: Agent | null = null
+
+/**
+ * Get or create the OAuth client
+ */
+async function getOAuthClient(): Promise<ExpoOAuthClient> {
+  if (oauthClient) return oauthClient
+
+  const options: ExpoOAuthClientOptions = {
+    clientMetadata: {
+      client_id: 'https://skyrdle.com/.well-known/client-metadata.json',
+      client_name: 'Skyrdle',
+      redirect_uris: ['farm.smol.games.skyrdle://oauth/callback'],
+      grant_types: ['authorization_code', 'refresh_token'],
+      response_types: ['code'],
+      scope: 'atproto repo:farm.smol.games.skyrdle.score?action=create&action=update repo:app.bsky.feed.post?action=create',
+      token_endpoint_auth_method: 'none',
+      dpop_bound_access_tokens: true,
+    },
+    handleResolver: 'https://bsky.social/',
+  }
+
+  oauthClient = new ExpoOAuthClient(options)
+  return oauthClient
 }
 
 /**
@@ -50,115 +65,58 @@ export async function clearAuthState(): Promise<void> {
 }
 
 /**
- * Generate a code verifier for PKCE
+ * Initialize auth - restore session if available
  */
-async function generateCodeVerifier(): Promise<string> {
-  const randomBytes = await Crypto.getRandomBytesAsync(32)
-  return Array.from(randomBytes)
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-}
+export async function initAuth(): Promise<AuthState | null> {
+  try {
+    const client = await getOAuthClient()
+    const result = await client.init()
 
-/**
- * Generate a code challenge from verifier
- */
-async function generateCodeChallenge(verifier: string): Promise<string> {
-  const digest = await Crypto.digestStringAsync(
-    Crypto.CryptoDigestAlgorithm.SHA256,
-    verifier,
-    { encoding: Crypto.CryptoEncoding.BASE64 }
-  )
-  // Convert to URL-safe base64
-  return digest.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
-}
+    if (result?.session) {
+      agent = new Agent(result.session)
+      const state: AuthState = {
+        did: result.session.sub,
+        handle: result.session.sub, // Will be updated with actual handle
+      }
+      await saveAuthState(state)
+      console.log('[Skyrdle Auth] Session restored for:', result.session.sub)
+      return state
+    }
 
-/**
- * Resolve a Bluesky handle to a DID
- */
-export async function resolveHandle(handle: string): Promise<string> {
-  // Remove @ if present
-  const cleanHandle = handle.startsWith('@') ? handle.slice(1) : handle
-
-  const response = await fetch(
-    `https://bsky.social/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(cleanHandle)}`
-  )
-
-  if (!response.ok) {
-    throw new Error('Failed to resolve handle')
+    console.log('[Skyrdle Auth] No session found on init')
+    return null
+  } catch (error) {
+    console.error('[Skyrdle Auth] Init error:', error)
+    return null
   }
-
-  const data = await response.json()
-  return data.did
 }
 
 /**
  * Start the OAuth login flow
- * Returns the auth state if successful, null if cancelled
  */
 export async function startLogin(handle: string): Promise<AuthState | null> {
   try {
-    // First resolve the handle to get the DID
-    const did = await resolveHandle(handle)
+    console.log('[Skyrdle Auth] Starting login for:', handle)
+    const client = await getOAuthClient()
 
-    // Generate PKCE values
-    const codeVerifier = await generateCodeVerifier()
-    const codeChallenge = await generateCodeChallenge(codeVerifier)
-
-    // Store verifier for later
-    await AsyncStorage.setItem('@skyrdle/pkce_verifier', codeVerifier)
-
-    // Build authorization request
-    const authRequest = new AuthSession.AuthRequest({
-      clientId: 'https://skyrdle.com/.well-known/client-metadata.json',
-      scopes: [
-        'atproto',
-        'repo:farm.smol.games.skyrdle.score?action=create&action=update',
-        'repo:app.bsky.feed.post?action=create',
-      ],
-      redirectUri,
-      codeChallenge,
-      codeChallengeMethod: AuthSession.CodeChallengeMethod.S256,
-      extraParams: {
-        login_hint: handle,
-      },
-    })
-
-    // Perform the authorization
-    const result = await authRequest.promptAsync({
-      authorizationEndpoint: BLUESKY_AUTH_URL,
-    })
-
-    if (result.type !== 'success') {
-      return null
-    }
-
-    // Exchange code for tokens
-    const tokenResponse = await AuthSession.exchangeCodeAsync(
-      {
-        clientId: 'https://skyrdle.com/.well-known/client-metadata.json',
-        code: result.params.code,
-        redirectUri,
-        extraParams: {
-          code_verifier: codeVerifier,
-        },
-      },
-      {
-        tokenEndpoint: BLUESKY_TOKEN_URL,
-      }
-    )
-
-    // Clean handle for storage
+    // Clean handle
     const cleanHandle = handle.startsWith('@') ? handle.slice(1) : handle
 
+    // This will open a browser for authentication
+    const session = await client.signIn(cleanHandle, {
+      scope: 'atproto repo:farm.smol.games.skyrdle.score?action=create&action=update repo:app.bsky.feed.post?action=create',
+    })
+
+    console.log('[Skyrdle Auth] Login successful, DID:', session.sub)
+
+    agent = new Agent(session)
+
     const authState: AuthState = {
-      did,
+      did: session.sub,
       handle: cleanHandle,
-      accessToken: tokenResponse.accessToken,
-      refreshToken: tokenResponse.refreshToken,
     }
 
     await saveAuthState(authState)
-
     return authState
   } catch (error) {
     console.error('[Skyrdle Auth] Login error:', error)
@@ -170,8 +128,18 @@ export async function startLogin(handle: string): Promise<AuthState | null> {
  * Logout and clear stored auth
  */
 export async function logout(): Promise<void> {
+  try {
+    const client = await getOAuthClient()
+    const state = await loadAuthState()
+    if (state?.did) {
+      await client.revoke(state.did)
+    }
+  } catch (error) {
+    console.warn('[Skyrdle Auth] Error revoking session:', error)
+  }
+
+  agent = null
   await clearAuthState()
-  await AsyncStorage.removeItem('@skyrdle/pkce_verifier')
 }
 
 /**
@@ -180,6 +148,20 @@ export async function logout(): Promise<void> {
 export async function isAuthenticated(): Promise<boolean> {
   const state = await loadAuthState()
   return state !== null
+}
+
+/**
+ * Get the current agent for API calls
+ */
+export function getAgent(): Agent | null {
+  return agent
+}
+
+/**
+ * Get current account DID
+ */
+export function getAccountDid(): string | undefined {
+  return agent?.assertDid
 }
 
 /**
