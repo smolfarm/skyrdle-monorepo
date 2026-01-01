@@ -23,7 +23,7 @@ async function getOAuthClient(): Promise<ExpoOAuthClient> {
     clientMetadata: {
       client_id: 'https://skyrdle.com/.well-known/client-metadata-native.json',
       client_name: 'Skyrdle',
-      redirect_uris: ['farm.smol.games.skyrdle:/callback'],
+      redirect_uris: ['com.skyrdle:/callback'],
       grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],
       scope: 'atproto repo:farm.smol.games.skyrdle.score?action=create&action=update repo:app.bsky.feed.post?action=create',
