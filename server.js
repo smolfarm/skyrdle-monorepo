@@ -33,7 +33,26 @@ app.get('/.well-known/client-metadata.json', (req, res) => {
     redirect_uris: [
       `${origin}/`,
       `${origin}`,
-      'farm.smol.games.skyrdle:/oauth/callback'
+    ],
+    grant_types: ['authorization_code', 'refresh_token'],
+    response_types: ['code'],
+    scope:
+      'atproto repo:farm.smol.games.skyrdle.score?action=create&action=update repo:app.bsky.feed.post?action=create',
+    token_endpoint_auth_method: 'none',
+    dpop_bound_access_tokens: true,
+  })
+})
+
+app.get('/.well-known/client-metadata-native.json', (req, res) => {
+  const origin = getPublicOrigin(req)
+  const clientId = `${origin}/.well-known/client-metadata-native.json`
+  res.setHeader('Cache-Control', 'public, max-age=300')
+  res.json({
+    client_id: clientId,
+    client_name: 'Skyrdle',
+    application_type: 'native',
+    redirect_uris: [
+      'farm.smol.games.skyrdle:/callback',
     ],
     grant_types: ['authorization_code', 'refresh_token'],
     response_types: ['code'],
