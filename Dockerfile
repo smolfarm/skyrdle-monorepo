@@ -29,10 +29,10 @@ RUN bun install --production --frozen-lockfile --ignore-scripts
 
 # Copy server + built client + required runtime source files
 COPY --from=builder /app/dist ./dist
-COPY server.js ./server.js
+COPY server.ts ./server.ts 
 COPY src ./src
 
-# App runs on PORT (default 4000 per server.js)
+# App runs on PORT (default 4000 per server.ts)
 ENV PORT=4000
 EXPOSE 4000
 

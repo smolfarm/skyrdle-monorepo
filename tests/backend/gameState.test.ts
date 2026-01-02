@@ -4,7 +4,6 @@ import crypto from 'crypto'
 
 /**
  * These tests validate the game state transition logic
- * Extracted from server.js lines 249-263
  *
  * Game status transitions:
  * - Playing → Won: When all letters in a guess are correct
@@ -14,7 +13,7 @@ import crypto from 'crypto'
  */
 
 describe('Game State Transitions', () => {
-  let mockGame
+  let mockGame: any
 
   beforeEach(() => {
     // Mock game object
