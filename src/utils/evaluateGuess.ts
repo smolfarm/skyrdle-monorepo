@@ -1,21 +1,19 @@
+type Evaluation = 'correct' | 'present' | 'absent'
+
 /**
  * Evaluate a guess against the target word using Wordle rules
  * Handles duplicate letters correctly with a two-pass algorithm
- *
- * @param {string} guess - The guessed word (will be converted to uppercase)
- * @param {string} targetWord - The target word (will be converted to uppercase)
- * @returns {Array<'correct'|'present'|'absent'>} Evaluation array
  */
-function evaluateGuess(guess, targetWord) {
+export function evaluateGuess(guess: string, targetWord: string): Evaluation[] {
   const guessChars = guess.toUpperCase().split('')
   const targetChars = targetWord.toUpperCase().split('')
-  const evals = Array(guessChars.length).fill(null)
+  const evals: Array<Evaluation | null> = Array(guessChars.length).fill(null)
 
   // First pass: mark correct positions
   for (let i = 0; i < guessChars.length; i++) {
     if (guessChars[i] === targetChars[i]) {
       evals[i] = 'correct'
-      targetChars[i] = null // Mark as used
+      targetChars[i] = null as unknown as string // Mark as used
     }
   }
 
@@ -25,13 +23,12 @@ function evaluateGuess(guess, targetWord) {
     const idx = targetChars.indexOf(guessChars[i])
     if (idx !== -1) {
       evals[i] = 'present'
-      targetChars[idx] = null // Mark as used
+      targetChars[idx] = null as unknown as string // Mark as used
     } else {
       evals[i] = 'absent'
     }
   }
 
-  return evals
+  // Cast away nulls now that we have fully populated
+  return evals.map(e => e ?? 'absent')
 }
-
-module.exports = { evaluateGuess }

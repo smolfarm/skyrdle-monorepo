@@ -9,9 +9,19 @@
 * Mongo model for word data.                                     
 */
 
-const mongoose = require('mongoose')
+import mongoose, { type Document, type Model } from 'mongoose'
 
-const wordSchema = new mongoose.Schema({
+export interface WordAttributes {
+  gameNumber: number
+  word: string
+  gamesWon: number
+  gamesLost: number
+  avgScore: number
+}
+
+export type WordDocument = WordAttributes & Document
+
+const wordSchema = new mongoose.Schema<WordDocument>({
   gameNumber: { type: Number, required: true },
   word: { type: String, required: true },
 
@@ -22,4 +32,5 @@ const wordSchema = new mongoose.Schema({
 
 wordSchema.index({ gameNumber: 1 }, { unique: true })
 
-module.exports = mongoose.model('Word', wordSchema, 'words')
+export default mongoose.model<WordDocument>('Word', wordSchema, 'words')
+export type WordModel = Model<WordDocument>

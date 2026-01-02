@@ -9,12 +9,9 @@
 * Mongo models for Skyrdle.                                     
 */
 
-const Word = require('./Word')
-const Game = require('./Game')  
-const Player = require('./Player')
+import Word from './Word'
+import Game from './Game'
+import Player from './Player'
 
-module.exports = {
-    Word,
-    Game,
-    Player,
-}
+export { Word, Game, Player }
+export default { Word, Game, Player }

@@ -9,14 +9,16 @@
 * Update stats for each player.                                     
 */
 
-require('dotenv').config()
-const mongoose = require('mongoose')
-const { Game, Player } = require('../models')
-const fetch = require('node-fetch').default
+import mongoose from 'mongoose'
+import fetch from 'node-fetch'
+import type { GameModel } from '../models/Game'
+import type { PlayerModel } from '../models/Player'
 
-async function updateStats() {
-  await mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-  console.log('MongoDB connected for player stats update')
+async function updateStats(Game: GameModel, Player: PlayerModel) {
+  if (mongoose.connection.readyState === 0) {
+    await mongoose.connect(process.env.MONGODB_URI as string, { useNewUrlParser: true, useUnifiedTopology: true } as any);
+    console.log('MongoDB connected for player stats update')
+  }
 
   const dids = await Game.distinct('did')
 
@@ -50,11 +52,11 @@ async function updateStats() {
     const avgScore = winCount > 0 ? totalGuesses / winCount : 0
 
     // Fetch username from PLC directory
-    let username;
+    let username: string | undefined;
     try {
       const res = await fetch(`https://plc.directory/${encodeURIComponent(did)}`);
       if (res.ok) {
-        const doc = await res.json();
+        const doc = await res.json() as any;
         const aka = Array.isArray(doc.alsoKnownAs) ? doc.alsoKnownAs[0] : null;
         if (aka) {
           username = aka.startsWith('at://') ? aka.split('at://')[1] : aka;
@@ -65,7 +67,7 @@ async function updateStats() {
     }
 
     // Build update fields and include username if available
-    const updateFields = { gamesWon, gamesLost, avgScore, currentStreak, maxStreak };
+    const updateFields: Record<string, string | number> = { gamesWon, gamesLost, avgScore, currentStreak, maxStreak };
     if (username) updateFields.handle = username;
     await Player.findOneAndUpdate(
       { did },
@@ -79,8 +81,8 @@ async function updateStats() {
   console.log('Player stats update complete')
 }
 
-module.exports = {
-  initJob: (gameModel, playerModel) => {
-    return updateStats;
-  }
+export function initJob(gameModel: GameModel, playerModel: PlayerModel) {
+  return () => updateStats(gameModel, playerModel)
 }
+
+export default { initJob }

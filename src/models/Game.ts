@@ -9,14 +9,32 @@
 * Mongo model for game data.                                  
 */
 
-const mongoose = require('mongoose')
+import mongoose, { type Document, type Model } from 'mongoose'
 
-const guessSchema = new mongoose.Schema({
+export interface Guess {
+  letters: string[]
+  evaluation: string[]
+}
+
+export interface GameAttributes {
+  did: string
+  targetWord: string
+  guesses: Guess[]
+  status: 'Playing' | 'Won' | 'Lost'
+  gameNumber: number
+  scoreHash?: string
+  syncedToAtproto?: boolean
+  completedAt?: Date
+}
+
+export type GameDocument = GameAttributes & Document
+
+const guessSchema = new mongoose.Schema<Guess>({
   letters: [String],
   evaluation: [String]
 }, { _id: false })
 
-const gameSchema = new mongoose.Schema({
+const gameSchema = new mongoose.Schema<GameDocument>({
   did: { type: String, required: true, index: true },
   targetWord: { type: String, required: true },
   guesses: [guessSchema],
@@ -30,4 +48,5 @@ const gameSchema = new mongoose.Schema({
 // Compound index for did and gameNumber to ensure uniqueness per user per game
 gameSchema.index({ did: 1, gameNumber: 1 }, { unique: true })
 
-module.exports = mongoose.model('Game', gameSchema)
+export default mongoose.model<GameDocument>('Game', gameSchema)
+export type GameModel = Model<GameDocument>
