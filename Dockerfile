@@ -39,4 +39,4 @@ EXPOSE 4000
 # Default env for local compose; can be overridden
 # ENV MONGODB_URI=mongodb://mongo:27017/skyrdle
 
-CMD ["bun", "server.js"]
+CMD ["bun", "server.ts"]
