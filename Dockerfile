@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 
 # --- Builder stage: install deps and build Vite frontend (Bun) ---
-FROM oven/bun:1-alpine AS builder
+# Pin Bun to the same version as packageManager to avoid runtime regressions
+FROM oven/bun:1.1.34-alpine AS builder
 WORKDIR /app
 
 # Install OS deps if needed (none currently)
@@ -19,7 +20,7 @@ COPY . .
 RUN bun run build
 
 # --- Runtime stage: minimal prod image (Bun) ---
-FROM oven/bun:latest AS runner
+FROM oven/bun:1.1.34 AS runner
 ENV NODE_ENV=production
 WORKDIR /app
 
