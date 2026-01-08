@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Share,
   Alert,
+  ActivityIndicator,
 } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
@@ -13,19 +14,23 @@ import { Platform } from 'react-native'
 import { router } from 'expo-router'
 import { useGame } from '@/contexts/game-context'
 import { useSettings } from '@/contexts/settings-context'
+import { useAuth } from '@/contexts/auth-context'
+import { createPost } from '@/services/auth'
 import { GameColors } from '@/constants/theme'
 
 const EMOJI_MAP = {
-  correct: '',
-  present: '',
-  absent: '',
-  correctColorblind: '',
-  presentColorblind: '',
+  correct: '🟩',
+  present: '🟨',
+  absent: '⬜',
+  correctColorblind: '🟦',
+  presentColorblind: '🟧',
 }
 
 export default function ShareModal() {
   const { guesses, status, gameNumber } = useGame()
   const { colorblindMode } = useSettings()
+  const { isAuthenticated } = useAuth()
+  const [isPosting, setIsPosting] = useState(false)
 
   const generateShareText = () => {
     const statusText = status === 'Won' ? guesses.length : 'X'
@@ -67,6 +72,23 @@ export default function ShareModal() {
     }
   }
 
+  const handlePostToBluesky = async () => {
+    const text = generateShareText()
+    setIsPosting(true)
+    try {
+      await createPost(text)
+      if (Platform.OS === 'ios') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      }
+      Alert.alert('Posted!', 'Your results have been posted to Bluesky')
+    } catch (error) {
+      console.error('Error posting to Bluesky:', error)
+      Alert.alert('Error', 'Failed to post to Bluesky. Please try again.')
+    } finally {
+      setIsPosting(false)
+    }
+  }
+
   const handleClose = () => {
     router.back()
   }
@@ -99,6 +121,20 @@ export default function ShareModal() {
             <Text style={styles.buttonText}>Share</Text>
           </TouchableOpacity>
         </View>
+
+        {isAuthenticated && (
+          <TouchableOpacity
+            style={[styles.button, styles.blueskyButton, isPosting && styles.buttonDisabled]}
+            onPress={handlePostToBluesky}
+            disabled={isPosting}
+          >
+            {isPosting ? (
+              <ActivityIndicator color="#ffffff" size="small" />
+            ) : (
+              <Text style={styles.buttonText}>Post to Bluesky</Text>
+            )}
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
           <Text style={styles.closeText}>Close</Text>
@@ -160,6 +196,13 @@ const styles = StyleSheet.create({
   },
   shareButton: {
     backgroundColor: GameColors.correct,
+  },
+  blueskyButton: {
+    backgroundColor: '#0085ff',
+    marginBottom: 16,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: {
     fontSize: 16,
