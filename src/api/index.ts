@@ -1,10 +1,14 @@
+import type { Express, Request, Response } from 'express'
+import type { Model } from 'mongoose'
+import type { GameDocument } from '../models/Game'
+import type { WordDocument } from '../models/Word'
+import type { PlayerDocument } from '../models/Player'
 
-
-function api(app, Game, Word, Player) {
+export default function api(app: Express, Game: Model<GameDocument>, Word: Model<WordDocument>, Player: Model<PlayerDocument>) {
     /**
      * Get the leaderboard
      */
-    app.get('/api/leaderboard', async (req, res) => {
+    app.get('/api/leaderboard', async (_req: Request, res: Response) => {
       console.log('Fetching leaderboard')
 
       const players = await Player.find().sort({ currentStreak: -1 })
@@ -24,7 +28,7 @@ function api(app, Game, Word, Player) {
      * Get a player's stats
      * @param {string} did - The player's DID
      */
-    app.get('/api/stats', async (req, res) => {
+    app.get('/api/stats', async (req: Request, res: Response) => {
         console.log(`Fetching player stats for ${req.query.did}`)
 
         const { did } = req.query
@@ -55,7 +59,7 @@ function api(app, Game, Word, Player) {
      * Get a specific game's stats
      * @param {number} gameNumber - The game number
      */
-    app.get('/api/game/:gameNumber/stats', async (req, res) => {
+    app.get('/api/game/:gameNumber/stats', async (req: Request, res: Response) => {
       const { gameNumber } = req.params
       if (!gameNumber) return res.status(400).json({ error: 'Missing gameNumber' })
       try {
@@ -75,7 +79,7 @@ function api(app, Game, Word, Player) {
     /**
      * Get stats for all games
      */
-    app.get('/api/games/stats', async (req, res) => {
+    app.get('/api/games/stats', async (req: Request, res: Response) => {
       try {
         const { limit } = req.query
 
@@ -104,5 +108,3 @@ function api(app, Game, Word, Player) {
       }
     })
 }
-
-module.exports = api

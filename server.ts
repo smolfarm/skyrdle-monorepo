@@ -1,14 +1,26 @@
-const express = require('express')
-const cors = require('cors')
-const mongoose = require('mongoose')
-require('dotenv').config()
-const crypto = require('crypto')
-const fs = require('fs')
-const { evaluateGuess } = require('./src/utils/evaluateGuess')
-const { getEasternDate, calculateGameNumber, getTargetWordForGameNumber } = require('./src/utils/dateUtils')
-let wordList = []
-let validationWordList = new Set()
-const path = require('path')
+import express from 'express'
+import cors from 'cors'
+import mongoose from 'mongoose'
+import dotenv from 'dotenv'
+import crypto from 'crypto'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { evaluateGuess } from './src/utils/evaluateGuess'
+import { calculateGameNumber, getTargetWordForGameNumber } from './src/utils/dateUtils'
+import api from './src/api'
+import { Word, Game, Player } from './src/models'
+import syncMongoToAtprotoService from './src/cron/syncMongoToAtproto'
+import updateWordStatsService from './src/cron/updateWordStats'
+import updatePlayerStatsService from './src/cron/updatePlayerStats'
+
+dotenv.config()
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+let wordList: string[] = []
+let validationWordList = new Set<string>()
 
 const app = express()
 // Respect proxy headers (Render, etc.) so req.protocol reflects HTTPS
@@ -78,8 +90,6 @@ try {
 app.use(express.static(path.join(__dirname, 'dist')))
 
 const port = process.env.PORT || 4000
-
-const { Word, Game, Player } = require('./src/models')
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -257,7 +267,6 @@ app.post('/api/guess', async (req, res) => {
   }
 })
 
-const api = require('./src/api')
 api(app, Game, Word, Player)
 
 app.get('*', (req, res) => {
@@ -265,11 +274,8 @@ app.get('*', (req, res) => {
 })
 
 // cron
-const syncMongoToAtprotoService = require('./src/cron/syncMongoToAtproto')
 const syncMongoToAtproto = syncMongoToAtprotoService.initSync(Game)
-const updateWordStatsService = require('./src/cron/updateWordStats')
 const updateWordStats = updateWordStatsService.initJob(Game, Word)
-const updatePlayerStatsService = require('./src/cron/updatePlayerStats')
 const updatePlayerStats = updatePlayerStatsService.initJob(Game, Player)
 
 // Set up interval for periodic sync

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import {
   AuthState,
-  loadAuthState,
+  initAuth,
   startLogin as authStartLogin,
   logout as authLogout,
 } from '@/services/auth'
@@ -21,19 +21,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [authState, setAuthState] = useState<AuthState | null>(null)
 
-  // Restore auth state on mount
+  // Initialize auth on mount - processes OAuth callbacks and restores sessions
   useEffect(() => {
-    async function restoreAuth() {
+    async function initialize() {
       try {
-        const state = await loadAuthState()
+        const state = await initAuth()
         setAuthState(state)
       } catch (error) {
-        console.error('[AuthContext] Error restoring auth:', error)
+        console.error('[AuthContext] Error initializing auth:', error)
       } finally {
         setIsLoading(false)
       }
     }
-    restoreAuth()
+    initialize()
   }, [])
 
   const login = async (handle: string): Promise<boolean> => {

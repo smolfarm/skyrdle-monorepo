@@ -9,9 +9,24 @@
 * Mongo model for player data.                                     
 */
 
-const mongoose = require('mongoose')
+import mongoose, { type Document, type Model } from 'mongoose'
 
-const playerSchema = new mongoose.Schema({
+export interface PlayerAttributes {
+  did: string
+  handle?: string
+  displayName?: string
+  gamesWon: number
+  gamesLost: number
+  avgScore: number
+  currentStreak: number
+  maxStreak: number
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export type PlayerDocument = PlayerAttributes & Document
+
+const playerSchema = new mongoose.Schema<PlayerDocument>({
   did: { type: String, required: true, index: true },
   handle: { type: String },
   displayName: { type: String },
@@ -26,4 +41,5 @@ const playerSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 })
 
-module.exports = mongoose.model('Player', playerSchema)
+export default mongoose.model<PlayerDocument>('Player', playerSchema)
+export type PlayerModel = Model<PlayerDocument>

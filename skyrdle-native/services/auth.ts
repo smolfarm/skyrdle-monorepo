@@ -14,10 +14,42 @@ let oauthClient: ExpoOAuthClient | null = null
 let agent: Agent | null = null
 
 /**
+ * RN/Hermes doesn't ship AbortSignal.timeout yet; polyfill for oauth-client.
+ */
+function ensureAbortSignalTimeout() {
+  if (typeof AbortSignal === 'undefined') return
+
+  // Polyfill AbortSignal.timeout for Hermes/RN
+  if (typeof (AbortSignal as any).timeout !== 'function') {
+    ;(AbortSignal as any).timeout = (ms: number) => {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), ms)
+      controller.signal.addEventListener('abort', () => clearTimeout(timer))
+      return controller.signal
+    }
+  }
+
+  // Polyfill throwIfAborted used by oauth-client internals
+  if (
+    typeof (AbortSignal as any).prototype?.throwIfAborted !== 'function' &&
+    (AbortSignal as any).prototype
+  ) {
+    ;(AbortSignal as any).prototype.throwIfAborted = function () {
+      if (this.aborted) {
+        const err: any = new DOMException('The operation was aborted.', 'AbortError')
+        throw err
+      }
+    }
+  }
+}
+
+/**
  * Get or create the OAuth client
  */
 async function getOAuthClient(): Promise<ExpoOAuthClient> {
   if (oauthClient) return oauthClient
+
+  ensureAbortSignalTimeout()
 
   const options: ExpoOAuthClientOptions = {
     clientMetadata: {
@@ -30,7 +62,12 @@ async function getOAuthClient(): Promise<ExpoOAuthClient> {
       token_endpoint_auth_method: 'none',
       dpop_bound_access_tokens: true,
     },
-    handleResolver: 'https://bsky.social/',
+    // Use Bluesky public API for handle resolution (XRPC)
+    handleResolver: 'https://api.bsky.social',
+    // Explicit PLC directory (identity resolution)
+    plcDirectoryUrl: 'https://plc.directory/',
+    // Allow HTTP fetches (PLC directory, etc.) in dev/emulator environments
+    allowHttp: true,
   }
 
   oauthClient = new ExpoOAuthClient(options)
@@ -69,22 +106,24 @@ export async function clearAuthState(): Promise<void> {
  */
 export async function initAuth(): Promise<AuthState | null> {
   try {
-    const client = await getOAuthClient()
-    const result = await client.init()
-
-    if (result?.session) {
-      agent = new Agent(result.session)
-      const state: AuthState = {
-        did: result.session.sub,
-        handle: result.session.sub, // Will be updated with actual handle
-      }
-      await saveAuthState(state)
-      console.log('[Skyrdle Auth] Session restored for:', result.session.sub)
-      return state
+    const existingState = await loadAuthState()
+    if (!existingState?.did) {
+      console.log('[Skyrdle Auth] No stored auth state on init')
+      return null
     }
 
-    console.log('[Skyrdle Auth] No session found on init')
-    return null
+    const client = await getOAuthClient()
+    const session = await client.restore(existingState.did, 'auto')
+
+    agent = new Agent(session)
+    console.log('[Skyrdle Auth] Session restored for:', session.sub)
+
+    const state: AuthState = {
+      did: session.sub,
+      handle: existingState.handle ?? session.sub,
+    }
+    await saveAuthState(state)
+    return state
   } catch (error) {
     console.error('[Skyrdle Auth] Init error:', error)
     return null
@@ -100,10 +139,16 @@ export async function startLogin(handle: string): Promise<AuthState | null> {
     const client = await getOAuthClient()
 
     // Clean handle
-    const cleanHandle = handle.startsWith('@') ? handle.slice(1) : handle
+    const cleanHandle = (handle.startsWith('@') ? handle.slice(1) : handle).trim()
+    // If user passes a DID, leave it as-is; otherwise ensure it is a FQDN handle
+    const normalizedHandle = cleanHandle.startsWith('did:')
+      ? cleanHandle
+      : cleanHandle.includes('.')
+        ? cleanHandle
+        : `${cleanHandle}.bsky.social`
 
     // This will open a browser for authentication
-    const session = await client.signIn(cleanHandle, {
+    const session = await client.signIn(normalizedHandle.toLowerCase(), {
       scope: 'atproto repo:farm.smol.games.skyrdle.score?action=create&action=update repo:app.bsky.feed.post?action=create',
     })
 
@@ -113,13 +158,17 @@ export async function startLogin(handle: string): Promise<AuthState | null> {
 
     const authState: AuthState = {
       did: session.sub,
-      handle: cleanHandle,
+      handle: normalizedHandle.toLowerCase(),
     }
 
     await saveAuthState(authState)
     return authState
   } catch (error) {
+    const withCause = error as any
     console.error('[Skyrdle Auth] Login error:', error)
+    if (withCause?.cause) {
+      console.error('[Skyrdle Auth] Login error cause:', withCause.cause)
+    }
     throw error
   }
 }

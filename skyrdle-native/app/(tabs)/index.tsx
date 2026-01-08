@@ -96,15 +96,17 @@ export default function GameScreen() {
         )}
       </View>
 
-      <View style={styles.keyboardArea}>
-        <VirtualKeyboard
-          onKey={addLetter}
-          onEnter={handleEnter}
-          onDelete={deleteLetter}
-          keyboardStatus={keyboardStatus}
-          disabled={isLoading || isGameOver}
-        />
-      </View>
+      {!isGameOver && (
+        <View style={styles.keyboardArea}>
+          <VirtualKeyboard
+            onKey={addLetter}
+            onEnter={handleEnter}
+            onDelete={deleteLetter}
+            keyboardStatus={keyboardStatus}
+            disabled={isLoading}
+          />
+        </View>
+      )}
     </SafeAreaView>
   )
 }
