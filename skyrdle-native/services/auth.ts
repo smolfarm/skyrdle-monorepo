@@ -214,6 +214,57 @@ export function getAccountDid(): string | undefined {
 }
 
 /**
+ * Create a post on Bluesky
+ */
+export async function createPost(text: string): Promise<{ uri: string; cid: string }> {
+  if (!agent) {
+    throw new Error('Not authenticated')
+  }
+
+  // Find URLs in the text to create link facets
+  const urlRegex = /https?:\/\/[^\s]+/g
+  const facets: Array<{
+    index: { byteStart: number; byteEnd: number }
+    features: Array<{ $type: string; uri: string }>
+  }> = []
+
+  // Convert text to bytes for proper indexing (UTF-8)
+  const encoder = new TextEncoder()
+
+  let match
+  while ((match = urlRegex.exec(text)) !== null) {
+    const url = match[0]
+    // Calculate byte positions
+    const beforeUrl = text.slice(0, match.index)
+    const byteStart = encoder.encode(beforeUrl).length
+    const byteEnd = byteStart + encoder.encode(url).length
+
+    facets.push({
+      index: { byteStart, byteEnd },
+      features: [{ $type: 'app.bsky.richtext.facet#link', uri: url }],
+    })
+  }
+
+  const record: Record<string, unknown> = {
+    $type: 'app.bsky.feed.post',
+    text,
+    createdAt: new Date().toISOString(),
+  }
+
+  if (facets.length > 0) {
+    record.facets = facets
+  }
+
+  const response = await agent.com.atproto.repo.createRecord({
+    repo: agent.assertDid,
+    collection: 'app.bsky.feed.post',
+    record,
+  })
+
+  return { uri: response.data.uri, cid: response.data.cid }
+}
+
+/**
  * Compute SHA-256 hash of a string
  */
 export async function computeHash(input: string): Promise<string> {
