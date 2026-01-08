@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.smolfarm.skyrdlenative"
+      "bundleIdentifier": "farm.smol.games.skyrdle"
     },
     "android": {
       "adaptiveIcon": {
