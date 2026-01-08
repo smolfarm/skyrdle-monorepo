@@ -43,7 +43,7 @@ export default function SettingsScreen() {
   }
 
   const openGitHub = () => {
-    Linking.openURL('https://github.com/smolfarm/skyrdle')
+    Linking.openURL('https://github.com/smolfarm/skyrdle-monorepo')
   }
 
   return (
@@ -91,11 +91,11 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>About</Text>
           <View style={styles.card}>
             <TouchableOpacity style={styles.linkRow} onPress={openBluesky}>
-              <Text style={styles.linkText}>Follow @skyrdle.com on Bluesky</Text>
+              <Text style={styles.linkText}>Follow us on Bluesky</Text>
             </TouchableOpacity>
             <View style={styles.separator} />
             <TouchableOpacity style={styles.linkRow} onPress={openGitHub}>
-              <Text style={styles.linkText}>View on GitHub</Text>
+              <Text style={styles.linkText}>View GitHub</Text>
             </TouchableOpacity>
             <View style={styles.separator} />
             <View style={styles.versionRow}>
