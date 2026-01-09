@@ -1,18 +1,54 @@
-import { fetchSuggestions, type Suggestion } from "../lib/admin-data";
+import { redirect } from "next/navigation";
+import {
+  fetchSuggestions,
+  scheduleSuggestedWord,
+  type Suggestion,
+} from "../lib/admin-data";
+
+function formatError(e: unknown) {
+  return e instanceof Error ? e.message : "Unknown error";
+}
+
+async function scheduleWordAction(formData: FormData) {
+  "use server";
+  const word = formData.get("word");
+  if (!word || typeof word !== "string") {
+    redirect(
+      "/admin/words?status=error&message=" +
+        encodeURIComponent("Word is required")
+    );
+  }
+
+  try {
+    await scheduleSuggestedWord(word);
+    redirect(
+      "/admin/words?status=success&message=" +
+        encodeURIComponent(`Scheduled ${word.toUpperCase()}`)
+    );
+  } catch (error) {
+    redirect(
+      "/admin/words?status=error&message=" +
+        encodeURIComponent(formatError(error))
+    );
+  }
+}
 
 export const metadata = {
   title: "Words | Skyrdle Admin",
 };
 
-export default async function WordsPage() {
+export default async function WordsPage({
+  searchParams,
+}: {
+  searchParams?: { status?: string; message?: string };
+}) {
   let suggestions: Suggestion[] = [];
   let error: string | null = null;
 
   try {
     suggestions = await fetchSuggestions();
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    error = message;
+    error = formatError(e);
   }
 
   return (
@@ -27,6 +63,18 @@ export default async function WordsPage() {
             Remaining backlog to assign to future games.
           </p>
         </header>
+
+        {searchParams?.message ? (
+          <div
+            className={`rounded-md border px-4 py-3 text-sm ${
+              searchParams.status === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/50 dark:text-emerald-100"
+                : "border-red-200 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/50 dark:text-red-100"
+            }`}
+          >
+            {searchParams.message}
+          </div>
+        ) : null}
 
         <section className="rounded-lg border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
           <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
@@ -58,6 +106,7 @@ export default async function WordsPage() {
                   <tr>
                     <th className="px-4 py-2 text-left font-medium">#</th>
                     <th className="px-4 py-2 text-left font-medium">Word</th>
+                    <th className="px-4 py-2 text-right font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -71,6 +120,17 @@ export default async function WordsPage() {
                       </td>
                       <td className="whitespace-nowrap px-4 py-2 align-middle text-sm font-mono uppercase tracking-wide">
                         {suggestion.word}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2 text-right align-middle text-sm">
+                        {/* The form posts to schedule and reloads the page server-side */}
+                        <form action={scheduleWordAction} method="POST" className="inline">
+                          <input type="hidden" name="word" value={suggestion.word} />
+                          <button
+                            className="rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-black"
+                          >
+                            Schedule
+                          </button>
+                        </form>
                       </td>
                     </tr>
                   ))}

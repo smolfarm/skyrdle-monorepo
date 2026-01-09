@@ -35,3 +35,19 @@ export async function fetchSuggestions(limit = 100): Promise<Suggestion[]> {
   }
   return res.json();
 }
+
+export async function scheduleSuggestedWord(word: string) {
+  const res = await fetch(new URL("/api/games/schedule", baseUrl).toString(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ word }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const message = data?.error || "Failed to schedule word";
+    throw new Error(message);
+  }
+
+  return res.json() as Promise<{ gameNumber: number; word: string }>;
+}
