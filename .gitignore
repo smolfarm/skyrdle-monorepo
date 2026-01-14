@@ -4,3 +4,4 @@ node_modules
 dist
 
 skyrdle-admin/.next
+skyrdle-native/build-*.aab
