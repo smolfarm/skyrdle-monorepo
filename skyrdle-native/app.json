@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "farm.smol.games.skyrdle",
+      "bundleIdentifier": "com.skyrdle",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
