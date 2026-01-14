@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.skyrdle",
+      "bundleIdentifier": "com.smolfarm.skyrdlenative",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -24,7 +24,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.skyrdle",
+      "package": "com.smolfarm.skyrdlenative",
       "intentFilters": [
         {
           "action": "VIEW",
