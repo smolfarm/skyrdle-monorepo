@@ -1,16 +1,19 @@
 {
   "expo": {
-    "name": "skyrdle-native",
+    "name": "Skyrdle",
     "slug": "skyrdle-native",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "farm.smol.games.skyrdle",
+    "scheme": "com.skyrdle",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.smolfarm.skyrdlenative"
+      "supportsTablet": false,
+      "bundleIdentifier": "com.smolfarm.skyrdlenative",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +24,18 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.smolfarm.skyrdlenative"
+      "package": "com.smolfarm.skyrdlenative",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "com.skyrdle"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "output": "static",
@@ -35,7 +49,7 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#2269b3",
           "dark": {
             "backgroundColor": "#000000"
           }
@@ -45,6 +59,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "bf1c68c3-f288-456b-83d1-7042231090a4"
+      }
     }
   }
 }

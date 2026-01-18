@@ -1,5 +1,6 @@
 {
   "name": "skyrdle-native",
+  "description": "Skyrdle client for iOS & Android",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
