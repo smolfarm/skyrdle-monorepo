@@ -129,4 +129,77 @@ export async function getGameStats(
   )
 }
 
+// ============================================
+// Custom Game API Functions
+// ============================================
+
+export interface CustomGameResponse {
+  customGameId: string
+  creatorDid: string
+  guesses: ServerGuess[]
+  status: GameStatus
+  targetWord?: string
+}
+
+export interface CreateCustomGameResponse {
+  customGameId: string
+  shareUrl: string
+}
+
+export interface ValidateWordResponse {
+  valid: boolean
+  reason: string | null
+}
+
+/**
+ * Validate if a word can be used for a custom game
+ */
+export async function validateWord(word: string): Promise<ValidateWordResponse> {
+  return fetchJson<ValidateWordResponse>(
+    `${API_BASE_URL}/api/validate-word?word=${encodeURIComponent(word)}`
+  )
+}
+
+/**
+ * Create a new custom game
+ */
+export async function createCustomGame(
+  did: string,
+  word: string
+): Promise<CreateCustomGameResponse> {
+  return fetchJson<CreateCustomGameResponse>(`${API_BASE_URL}/api/custom-game`, {
+    method: 'POST',
+    body: JSON.stringify({ did, word }),
+  })
+}
+
+/**
+ * Get a custom game state
+ */
+export async function getCustomGame(
+  customGameId: string,
+  did: string
+): Promise<CustomGameResponse> {
+  return fetchJson<CustomGameResponse>(
+    `${API_BASE_URL}/api/custom-game/${customGameId}?did=${encodeURIComponent(did)}`
+  )
+}
+
+/**
+ * Submit a guess for a custom game
+ */
+export async function submitCustomGameGuess(
+  customGameId: string,
+  did: string,
+  guess: string
+): Promise<CustomGameResponse> {
+  return fetchJson<CustomGameResponse>(
+    `${API_BASE_URL}/api/custom-game/${customGameId}/guess`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ did, guess }),
+    }
+  )
+}
+
 export { ApiError }

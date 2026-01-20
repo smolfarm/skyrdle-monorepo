@@ -12,6 +12,8 @@
 import Word from './Word'
 import Game from './Game'
 import Player from './Player'
+import CustomGame from './CustomGame'
+import CustomGameParticipant from './CustomGameParticipant'
 
-export { Word, Game, Player }
-export default { Word, Game, Player }
+export { Word, Game, Player, CustomGame, CustomGameParticipant }
+export default { Word, Game, Player, CustomGame, CustomGameParticipant }

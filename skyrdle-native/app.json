@@ -13,7 +13,10 @@
       "bundleIdentifier": "com.smolfarm.skyrdlenative",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "associatedDomains": [
+        "applinks:skyrdle.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -31,6 +34,18 @@
           "data": [
             {
               "scheme": "com.skyrdle"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "skyrdle.com",
+              "pathPrefix": "/c/"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
