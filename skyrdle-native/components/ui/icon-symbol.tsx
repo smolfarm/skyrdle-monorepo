@@ -18,6 +18,11 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  // Tab bar icons
+  'gamecontroller.fill': 'sports-esports',
+  'chart.bar.fill': 'insert-chart',
+  'trophy.fill': 'emoji-events',
+  'gearshape.fill': 'settings',
 } as IconMapping;
 
 /**
