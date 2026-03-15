@@ -45,7 +45,6 @@ const VirtualKeyboard: React.FC<Props> = (props: VirtualKeyboardProps) => {
               key={letter}
               className={getKeyClass(letter)}
               onClick={() => onKey(letter)}
-              disabled={keyboardStatus[letter] === 'absent'}
             >
               {letter}
             </button>

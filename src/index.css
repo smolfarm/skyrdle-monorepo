@@ -395,7 +395,6 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
 
 .key-absent {
   opacity: 0.4 !important;
-  cursor: not-allowed !important;
 }
 
 .row.invalid-row .cell {

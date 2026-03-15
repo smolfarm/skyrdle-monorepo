@@ -102,14 +102,12 @@ export function VirtualKeyboard({
         <View key={rowIndex} style={styles.row}>
           {row.split('').map((letter) => {
             const keyStyle = getKeyStyle(letter)
-            const isDisabled = disabled || keyboardStatus[letter] === 'absent'
-
             return (
               <TouchableOpacity
                 key={letter}
                 style={[styles.key, keyStyle]}
                 onPress={() => handleKeyPress(letter)}
-                disabled={isDisabled}
+                disabled={disabled}
                 activeOpacity={0.7}
               >
                 <Text style={styles.keyText}>{letter}</Text>
