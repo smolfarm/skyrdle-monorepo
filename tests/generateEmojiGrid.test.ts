@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateEmojiGrid, GameStatus } from '../src/App'
+import { generateEmojiGrid, GameStatus } from '../src/utils/emojiGrid'
 import type { ServerGuess as AtProtoServerGuess } from '../src/atproto'
 
 const makeGuess = (evaluation: ('correct' | 'present' | 'absent')[]): AtProtoServerGuess => ({

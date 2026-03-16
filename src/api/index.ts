@@ -17,7 +17,7 @@ export default function api(app: Express, Game: Model<GameDocument>, Word: Model
         did: player.did,
         currentStreak: player.currentStreak,
         gamesWon: player.gamesWon,
-        averageScore: player.averageScore,
+        averageScore: player.avgScore,
         handle: player.handle
       }))
       
@@ -85,7 +85,7 @@ export default function api(app: Express, Game: Model<GameDocument>, Word: Model
 
         let query = Word.find({}).sort({ gameNumber: 1 })
         if (limit) {
-          const parsedLimit = parseInt(limit, 10)
+          const parsedLimit = parseInt(limit as string, 10)
           if (!isNaN(parsedLimit) && parsedLimit > 0) {
             query = query.limit(parsedLimit)
           }

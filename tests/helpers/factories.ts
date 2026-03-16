@@ -41,7 +41,7 @@ export function createMockGame(options: {
   scoreHash?: string
   completedAt?: Date
 }) {
-  return {
+  const game: Record<string, unknown> = {
     did: options.did,
     targetWord: options.targetWord,
     guesses: options.guesses || [],
@@ -50,6 +50,7 @@ export function createMockGame(options: {
     scoreHash: options.scoreHash,
     syncedToAtproto: false,
     completedAt: options.completedAt,
-    save: async function() { return this },
   }
+  game.save = async () => game
+  return game
 }
