@@ -760,6 +760,129 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
   transition: 0.3s;
 }
 
+.modal-overlay {
+  background: rgba(6, 10, 18, 0.72);
+  padding: 1rem;
+}
+
+.create-shared-game-modal {
+  width: min(28rem, 100%);
+  text-align: left;
+}
+
+.modal-copy {
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.5;
+}
+
+.shared-game-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.shared-game-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.shared-game-field span {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.shared-game-field input {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(9, 14, 23, 0.52);
+  color: #fff;
+  font-size: 1rem;
+}
+
+.shared-game-field input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.shared-game-field input:focus {
+  outline: none;
+  border-color: rgba(78, 205, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(78, 205, 255, 0.12);
+}
+
+.shared-game-error {
+  color: #ff9f9f;
+  margin: 0;
+}
+
+.shared-game-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.shared-game-banner,
+.shared-game-error-panel {
+  margin: 0 auto 1rem;
+  padding: 1rem;
+  width: min(100%, 34rem);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(160deg, rgba(78, 205, 255, 0.14), rgba(16, 18, 24, 0.72)),
+    rgba(255, 255, 255, 0.04);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.22);
+}
+
+.shared-game-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #9fdfff;
+  margin-bottom: 0.35rem;
+}
+
+.shared-game-copy,
+.shared-game-error-panel p {
+  color: rgba(255, 255, 255, 0.78);
+  margin-bottom: 0.75rem;
+  line-height: 1.45;
+}
+
+.shared-link-button {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shared-game-error-panel h2 {
+  margin-bottom: 0.6rem;
+}
+
+@media (max-width: 480px) {
+  .game-title {
+    max-width: 8.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .shared-game-actions {
+    flex-direction: column;
+  }
+
+  .shared-game-actions .btn-glass {
+    width: 100%;
+  }
+
+  .game-footer {
+    flex-wrap: wrap;
+  }
+}
+
 .toggle-switch input:checked + .toggle-slider {
   background: rgba(78, 205, 255, 0.6);
   border-color: rgba(78, 205, 255, 0.8);

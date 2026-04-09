@@ -2,7 +2,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/server-app'
-import { createMockGameModel, createMockWordModel, createMockPlayerModel, mockGameDoc } from '../mocks/models'
+import {
+  createMockGameModel,
+  createMockPlayerModel,
+  createMockSharedGameModel,
+  createMockSharedGamePlayModel,
+  createMockWordModel,
+  mockGameDoc,
+} from '../mocks/models'
 import { calculateGameNumber } from '../../src/utils/dateUtils'
 
 // Pin time to avoid flakiness across midnight rollover
@@ -22,12 +29,16 @@ describe('GET /api/game', () => {
     Game = createMockGameModel()
     const Word = createMockWordModel()
     const Player = createMockPlayerModel()
+    const SharedGame = createMockSharedGameModel()
+    const SharedGamePlay = createMockSharedGamePlayModel()
     app = createApp({
       wordList,
       validationWordList,
       Game: Game as any,
       Word: Word as any,
       Player: Player as any,
+      SharedGame: SharedGame as any,
+      SharedGamePlay: SharedGamePlay as any,
       getPublicOrigin: () => 'http://localhost:4000',
     })
   })
@@ -88,12 +99,16 @@ describe('GET /api/game/:gameNumber', () => {
     Game = createMockGameModel()
     const Word = createMockWordModel()
     const Player = createMockPlayerModel()
+    const SharedGame = createMockSharedGameModel()
+    const SharedGamePlay = createMockSharedGamePlayModel()
     app = createApp({
       wordList,
       validationWordList,
       Game: Game as any,
       Word: Word as any,
       Player: Player as any,
+      SharedGame: SharedGame as any,
+      SharedGamePlay: SharedGamePlay as any,
       getPublicOrigin: () => 'http://localhost:4000',
     })
   })

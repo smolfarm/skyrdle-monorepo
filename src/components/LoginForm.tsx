@@ -5,11 +5,12 @@ import AboutModal from './AboutModal'
 
 type LoginFormProps = {
     handle: string
+    contextMessage?: string
     onHandleChange: (handle: string) => void
     onLoginAttempt: () => void
 }
 
-export default function LoginForm({ handle, onHandleChange, onLoginAttempt }: LoginFormProps) {
+export default function LoginForm({ handle, contextMessage, onHandleChange, onLoginAttempt }: LoginFormProps) {
     const [showAbout, setShowAbout] = useState(false)
 
     return (
@@ -19,7 +20,7 @@ export default function LoginForm({ handle, onHandleChange, onLoginAttempt }: Lo
 
                 <div className="login-header">
                     <h1 className="login-title">Skyrdle</h1>
-                    <p className="login-subtitle">Daily Word Puzzle</p>
+                    <p className="login-subtitle">{contextMessage || 'Daily Word Puzzle'}</p>
                 </div>
 
                 <form

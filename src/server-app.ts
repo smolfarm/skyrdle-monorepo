@@ -9,6 +9,8 @@ import type { Model } from 'mongoose'
 import type { GameDocument } from './models/Game'
 import type { WordDocument } from './models/Word'
 import type { PlayerDocument } from './models/Player'
+import type { SharedGameDocument } from './models/SharedGame'
+import type { SharedGamePlayDocument } from './models/SharedGamePlay'
 
 interface AppDependencies {
   wordList: string[]
@@ -16,12 +18,24 @@ interface AppDependencies {
   Game: Model<GameDocument>
   Word: Model<WordDocument>
   Player: Model<PlayerDocument>
+  SharedGame: Model<SharedGameDocument>
+  SharedGamePlay: Model<SharedGamePlayDocument>
   getPublicOrigin: (req: express.Request) => string
   staticDir?: string
 }
 
 export function createApp(deps: AppDependencies) {
-  const { wordList, validationWordList, Game, Word, Player, getPublicOrigin, staticDir } = deps
+  const {
+    wordList,
+    validationWordList,
+    Game,
+    Word,
+    Player,
+    SharedGame,
+    SharedGamePlay,
+    getPublicOrigin,
+    staticDir,
+  } = deps
 
   const app = express()
   app.set('trust proxy', true)
@@ -92,6 +106,53 @@ export function createApp(deps: AppDependencies) {
       await game.save()
     }
     return game
+  }
+
+  function normalizeGuessWord(value: unknown) {
+    return String(value || '').trim().toUpperCase()
+  }
+
+  function normalizeSharedGameTitle(value: unknown) {
+    const title = String(value || '').trim()
+    return title.slice(0, 80)
+  }
+
+  function normalizeSharedGameCode(value: unknown) {
+    return String(value || '').trim().toLowerCase()
+  }
+
+  function buildSharedGameResponse(req: express.Request, sharedGame: SharedGameDocument) {
+    return {
+      shareCode: sharedGame.shareCode,
+      title: sharedGame.title || '',
+      creatorDid: sharedGame.creatorDid,
+      shareUrl: `${getPublicOrigin(req)}/shared/${sharedGame.shareCode}`,
+    }
+  }
+
+  async function generateShareCode() {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const shareCode = crypto.randomBytes(5).toString('hex')
+      const existing = await SharedGame.findOne({ shareCode })
+      if (!existing) return shareCode
+    }
+    throw new Error('Failed to generate a unique share code')
+  }
+
+  async function getOrCreateSharedGamePlay(did: string, shareCode: string) {
+    let play = await SharedGamePlay.findOne({ did, shareCode })
+
+    if (!play) {
+      play = new SharedGamePlay({
+        did,
+        shareCode,
+        guesses: [],
+        status: 'Playing',
+      })
+      await play.save()
+    }
+
+    return play
   }
 
   app.get('/api/game', async (req, res) => {
@@ -203,6 +264,120 @@ export function createApp(deps: AppDependencies) {
       res.json({ guesses: game.guesses, status: game.status, gameNumber: game.gameNumber })
     } catch (error) {
       console.error('Error processing guess:', error)
+      res.status(500).json({ error: 'Failed to process guess' })
+    }
+  })
+
+  app.post('/api/shared-games', async (req, res) => {
+    const { did, targetWord, title } = req.body
+
+    if (!did || !targetWord) {
+      return res.status(400).json({ error: 'Missing did or targetWord' })
+    }
+
+    const normalizedWord = normalizeGuessWord(targetWord)
+    if (normalizedWord.length !== 5 || !validationWordList.has(normalizedWord)) {
+      return res.status(400).json({ error: 'Invalid word' })
+    }
+
+    try {
+      const shareCode = await generateShareCode()
+      const createdGame = new SharedGame({
+        shareCode,
+        creatorDid: String(did),
+        targetWord: normalizedWord,
+        title: normalizeSharedGameTitle(title),
+      })
+      await createdGame.save()
+
+      res.status(201).json({
+        ...buildSharedGameResponse(req, createdGame),
+        targetWord: normalizedWord,
+      })
+    } catch (error) {
+      console.error('Error creating shared game:', error)
+      res.status(500).json({ error: 'Failed to create shared game' })
+    }
+  })
+
+  app.get('/api/shared-games/:shareCode', async (req, res) => {
+    const shareCode = normalizeSharedGameCode(req.params.shareCode)
+    const did = typeof req.query.did === 'string' ? req.query.did : null
+
+    if (!shareCode) {
+      return res.status(400).json({ error: 'Missing shareCode' })
+    }
+
+    try {
+      const sharedGame = await SharedGame.findOne({ shareCode })
+      if (!sharedGame) {
+        return res.status(404).json({ error: 'Shared game not found' })
+      }
+
+      const baseResponse = buildSharedGameResponse(req, sharedGame)
+
+      if (!did) {
+        return res.json(baseResponse)
+      }
+
+      const play = await getOrCreateSharedGamePlay(did, shareCode)
+
+      res.json({
+        ...baseResponse,
+        guesses: play.guesses,
+        status: play.status,
+      })
+    } catch (error) {
+      console.error('Error fetching shared game:', error)
+      res.status(500).json({ error: 'Failed to fetch shared game' })
+    }
+  })
+
+  app.post('/api/shared-games/:shareCode/guess', async (req, res) => {
+    const { did, guess } = req.body
+    const shareCode = normalizeSharedGameCode(req.params.shareCode)
+
+    if (!did || !guess) {
+      return res.status(400).json({ error: 'Missing did or guess' })
+    }
+
+    const normalizedGuess = normalizeGuessWord(guess)
+    if (!validationWordList.has(normalizedGuess)) {
+      return res.status(400).json({ error: 'Invalid word' })
+    }
+
+    try {
+      const sharedGame = await SharedGame.findOne({ shareCode })
+      if (!sharedGame) {
+        return res.status(404).json({ error: 'Shared game not found' })
+      }
+
+      const play = await getOrCreateSharedGamePlay(String(did), shareCode)
+
+      if (play.status !== 'Playing') {
+        return res.status(400).json({ error: 'Game is already over (Won or Lost)' })
+      }
+
+      const evals = evaluateGuess(normalizedGuess, sharedGame.targetWord)
+      play.guesses.push({ letters: normalizedGuess.split(''), evaluation: evals })
+
+      if (evals.every(e => e === 'correct')) {
+        play.status = 'Won'
+        play.completedAt = new Date()
+      } else if (play.guesses.length >= 6) {
+        play.status = 'Lost'
+        play.completedAt = new Date()
+      }
+
+      await play.save()
+
+      res.json({
+        ...buildSharedGameResponse(req, sharedGame),
+        guesses: play.guesses,
+        status: play.status,
+      })
+    } catch (error) {
+      console.error('Error processing shared game guess:', error)
       res.status(500).json({ error: 'Failed to process guess' })
     }
   })

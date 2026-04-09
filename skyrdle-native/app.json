@@ -2,7 +2,7 @@
   "expo": {
     "name": "Skyrdle",
     "slug": "skyrdle-native",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "com.skyrdle",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.smolfarm.skyrdlenative",
+      "bundleIdentifier": "farm.smol.games.skyrdle",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

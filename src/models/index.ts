@@ -12,6 +12,8 @@
 import Word from './Word'
 import Game from './Game'
 import Player from './Player'
+import SharedGame from './SharedGame'
+import SharedGamePlay from './SharedGamePlay'
 
-export { Word, Game, Player }
-export default { Word, Game, Player }
+export { Word, Game, Player, SharedGame, SharedGamePlay }
+export default { Word, Game, Player, SharedGame, SharedGamePlay }

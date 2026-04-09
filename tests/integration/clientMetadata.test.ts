@@ -2,7 +2,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/server-app'
-import { createMockGameModel, createMockWordModel, createMockPlayerModel } from '../mocks/models'
+import {
+  createMockGameModel,
+  createMockPlayerModel,
+  createMockSharedGameModel,
+  createMockSharedGamePlayModel,
+  createMockWordModel,
+} from '../mocks/models'
 
 function buildApp(getPublicOrigin = () => 'https://skyrdle.example.com') {
   return createApp({
@@ -11,6 +17,8 @@ function buildApp(getPublicOrigin = () => 'https://skyrdle.example.com') {
     Game: createMockGameModel() as any,
     Word: createMockWordModel() as any,
     Player: createMockPlayerModel() as any,
+    SharedGame: createMockSharedGameModel() as any,
+    SharedGamePlay: createMockSharedGamePlayModel() as any,
     getPublicOrigin,
   })
 }
@@ -94,6 +102,8 @@ describe('static file and catch-all behavior', () => {
       Game: createMockGameModel() as any,
       Word: createMockWordModel() as any,
       Player: createMockPlayerModel() as any,
+      SharedGame: createMockSharedGameModel() as any,
+      SharedGamePlay: createMockSharedGamePlayModel() as any,
       getPublicOrigin: () => 'https://example.com',
       staticDir: '/tmp/nonexistent-dir-for-test',
     })

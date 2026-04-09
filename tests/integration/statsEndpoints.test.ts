@@ -2,7 +2,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/server-app'
-import { createMockGameModel, createMockWordModel, createMockPlayerModel } from '../mocks/models'
+import {
+  createMockGameModel,
+  createMockPlayerModel,
+  createMockSharedGameModel,
+  createMockSharedGamePlayModel,
+  createMockWordModel,
+} from '../mocks/models'
 
 describe('GET /api/leaderboard', () => {
   let app: ReturnType<typeof createApp>
@@ -12,12 +18,16 @@ describe('GET /api/leaderboard', () => {
     const Game = createMockGameModel()
     const Word = createMockWordModel()
     Player = createMockPlayerModel()
+    const SharedGame = createMockSharedGameModel()
+    const SharedGamePlay = createMockSharedGamePlayModel()
     app = createApp({
       wordList: ['CRANE'],
       validationWordList: new Set(['CRANE']),
       Game: Game as any,
       Word: Word as any,
       Player: Player as any,
+      SharedGame: SharedGame as any,
+      SharedGamePlay: SharedGamePlay as any,
       getPublicOrigin: () => 'http://localhost:4000',
     })
   })
@@ -62,12 +72,16 @@ describe('GET /api/stats', () => {
     Game = createMockGameModel()
     const Word = createMockWordModel()
     const Player = createMockPlayerModel()
+    const SharedGame = createMockSharedGameModel()
+    const SharedGamePlay = createMockSharedGamePlayModel()
     app = createApp({
       wordList: ['CRANE'],
       validationWordList: new Set(['CRANE']),
       Game: Game as any,
       Word: Word as any,
       Player: Player as any,
+      SharedGame: SharedGame as any,
+      SharedGamePlay: SharedGamePlay as any,
       getPublicOrigin: () => 'http://localhost:4000',
     })
   })
@@ -140,12 +154,16 @@ describe('GET /api/game/:gameNumber/stats', () => {
     const Game = createMockGameModel()
     Word = createMockWordModel()
     const Player = createMockPlayerModel()
+    const SharedGame = createMockSharedGameModel()
+    const SharedGamePlay = createMockSharedGamePlayModel()
     app = createApp({
       wordList: ['CRANE'],
       validationWordList: new Set(['CRANE']),
       Game: Game as any,
       Word: Word as any,
       Player: Player as any,
+      SharedGame: SharedGame as any,
+      SharedGamePlay: SharedGamePlay as any,
       getPublicOrigin: () => 'http://localhost:4000',
     })
   })
@@ -183,12 +201,16 @@ describe('GET /api/games/stats', () => {
     const Game = createMockGameModel()
     Word = createMockWordModel()
     const Player = createMockPlayerModel()
+    const SharedGame = createMockSharedGameModel()
+    const SharedGamePlay = createMockSharedGamePlayModel()
     app = createApp({
       wordList: ['CRANE'],
       validationWordList: new Set(['CRANE']),
       Game: Game as any,
       Word: Word as any,
       Player: Player as any,
+      SharedGame: SharedGame as any,
+      SharedGamePlay: SharedGamePlay as any,
       getPublicOrigin: () => 'http://localhost:4000',
     })
   })

@@ -4,7 +4,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { createApp } from './src/server-app'
-import { Word, Game, Player } from './src/models'
+import { Word, Game, Player, SharedGame, SharedGamePlay } from './src/models'
 import syncMongoToAtprotoService from './src/cron/syncMongoToAtproto'
 import updateWordStatsService from './src/cron/updateWordStats'
 import updatePlayerStatsService from './src/cron/updatePlayerStats'
@@ -40,6 +40,8 @@ const app = createApp({
   Game,
   Word,
   Player,
+  SharedGame,
+  SharedGamePlay,
   getPublicOrigin,
   staticDir: path.join(__dirname, 'dist'),
 })

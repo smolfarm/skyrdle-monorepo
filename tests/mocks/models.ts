@@ -75,3 +75,43 @@ export function createMockPlayerModel() {
   }
   return MockPlayer
 }
+
+export function createMockSharedGameModel() {
+  const instances: any[] = []
+
+  const MockSharedGame: any = vi.fn().mockImplementation((data: any) => {
+    const doc = createSaveableDoc({
+      ...data,
+      title: data.title || '',
+      createdAt: data.createdAt || new Date(),
+    })
+    instances.push(doc)
+    return doc
+  })
+
+  MockSharedGame.findOne = vi.fn().mockResolvedValue(null)
+  MockSharedGame.find = vi.fn().mockImplementation(() => createChainableQuery([]))
+  MockSharedGame._instances = instances
+
+  return MockSharedGame
+}
+
+export function createMockSharedGamePlayModel() {
+  const instances: any[] = []
+
+  const MockSharedGamePlay: any = vi.fn().mockImplementation((data: any) => {
+    const doc = createSaveableDoc({
+      ...data,
+      guesses: data.guesses || [],
+      status: data.status || 'Playing',
+    })
+    instances.push(doc)
+    return doc
+  })
+
+  MockSharedGamePlay.findOne = vi.fn().mockResolvedValue(null)
+  MockSharedGamePlay.find = vi.fn().mockImplementation(() => createChainableQuery([]))
+  MockSharedGamePlay._instances = instances
+
+  return MockSharedGamePlay
+}
