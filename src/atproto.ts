@@ -142,6 +142,52 @@ export async function getScore(did: string, gameNumber: number): Promise<number 
   }
 }
 
+// Save shared game score to AT Protocol ledger
+export async function saveSharedGameScore(
+  did: string,
+  shareCode: string,
+  title: string,
+  score: number,
+  guesses: ServerGuess[],
+) {
+  if (!agent) throw new Error('Not authenticated')
+  const isWin = score >= 0
+  const recordHash = await computeHash(`${did}|shared-${shareCode}|${score}`)
+  await agent.com.atproto.repo.createRecord({
+    repo: did,
+    collection: USER_SCORE_COLLECTION,
+    rkey: `shared-${shareCode}`,
+    record: {
+      shareCode,
+      title,
+      score,
+      guesses,
+      timestamp: new Date().toISOString(),
+      hash: recordHash,
+      isWin,
+    },
+  })
+}
+
+// Check existing shared game score
+export async function getSharedGameScore(did: string, shareCode: string): Promise<number | null> {
+  if (!agent) return null
+  try {
+    const res = await agent.com.atproto.repo.listRecords({
+      repo: did,
+      collection: USER_SCORE_COLLECTION,
+    })
+    for (const record of res.data.records) {
+      const value = record.value as any
+      if (value.shareCode === shareCode) return value.score
+    }
+    return null
+  } catch (e) {
+    console.error('[Skyrdle OAuth] Error fetching shared game score:', e)
+    return null
+  }
+}
+
 /** Get current account DID */
 export function getAccountDid(): string | undefined {
   return agent?.assertDid

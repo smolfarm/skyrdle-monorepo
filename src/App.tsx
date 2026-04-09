@@ -11,7 +11,7 @@
 
 import React, { KeyboardEvent, useEffect, useState } from 'react'
 import Swal from 'sweetalert2'
-import { getScore, initAuth, logout, postSkeet, saveScore, ServerGuess, startLogin } from './atproto'
+import { getScore, getSharedGameScore, initAuth, logout, postSkeet, saveScore, saveSharedGameScore, ServerGuess, startLogin } from './atproto'
 import CreateSharedGameModal from './components/CreateSharedGameModal'
 import AboutModal from './components/AboutModal'
 import Footer from './components/Footer'
@@ -268,9 +268,13 @@ const App: React.FC = () => {
   }, [did, route])
 
   useEffect(() => {
-    if (!did || route.kind !== 'daily' || viewedGameNumber == null) return
-    getScore(did, viewedGameNumber).then((score) => setExistingScore(score))
-  }, [did, route, viewedGameNumber])
+    if (!did) return
+    if (route.kind === 'daily' && viewedGameNumber != null) {
+      getScore(did, viewedGameNumber).then((score) => setExistingScore(score))
+    } else if (route.kind === 'shared' && sharedGame) {
+      getSharedGameScore(did, sharedGame.shareCode).then((score) => setExistingScore(score))
+    }
+  }, [did, route, viewedGameNumber, sharedGame])
 
   useEffect(() => {
     if (route.kind === 'daily') {
@@ -294,6 +298,14 @@ const App: React.FC = () => {
     }
 
     if (sharedGame && (status === GameStatus.Won || status === GameStatus.Lost)) {
+      if (did && existingScore === null) {
+        const scoreVal = status === GameStatus.Won ? guesses.length : -1
+        ;(async () => {
+          await saveSharedGameScore(did, sharedGame.shareCode, sharedGame.title, scoreVal, guesses)
+          setExistingScore(scoreVal)
+        })()
+      }
+
       setShareText(buildSharedGameShareText(getSharedGameTitle(sharedGame, route), sharedGame.shareUrl, guesses, status))
     } else {
       setShareText('')
