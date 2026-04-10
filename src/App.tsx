@@ -425,6 +425,7 @@ const App: React.FC = () => {
 
   const onKeyDown = (event: KeyboardEvent) => {
     if (!did || status !== GameStatus.Playing) return
+    if (showCreateSharedGame || showAbout || showStats || showSettings) return
 
     const key = event.key
     if (key === 'Enter') {
