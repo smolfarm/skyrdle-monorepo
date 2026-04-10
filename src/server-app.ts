@@ -318,6 +318,28 @@ export function createApp(deps: AppDependencies) {
     }
   })
 
+  app.patch('/api/shared-games/:shareCode', async (req, res) => {
+    const shareCode = normalizeSharedGameCode(req.params.shareCode)
+    const { did, title } = req.body
+
+    if (!did) return res.status(400).json({ error: 'Missing did' })
+    if (typeof title !== 'string') return res.status(400).json({ error: 'Missing title' })
+
+    try {
+      const sharedGame = await SharedGame.findOne({ shareCode })
+      if (!sharedGame) return res.status(404).json({ error: 'Shared game not found' })
+      if (sharedGame.creatorDid !== String(did)) return res.status(403).json({ error: 'Not the creator of this game' })
+
+      sharedGame.title = normalizeSharedGameTitle(title)
+      await sharedGame.save()
+
+      res.json(buildSharedGameResponse(req, sharedGame))
+    } catch (error) {
+      console.error('Error renaming shared game:', error)
+      res.status(500).json({ error: 'Failed to rename shared game' })
+    }
+  })
+
   app.get('/api/shared-games/:shareCode', async (req, res) => {
     const shareCode = normalizeSharedGameCode(req.params.shareCode)
     const did = typeof req.query.did === 'string' ? req.query.did : null

@@ -29,6 +29,8 @@ export default function CreateSharedGameModal({
   const [myGames, setMyGames] = useState<SharedGameSummary[]>([])
   const [myGamesLoading, setMyGamesLoading] = useState(false)
   const [myGamesError, setMyGamesError] = useState<string | null>(null)
+  const [editingCode, setEditingCode] = useState<string | null>(null)
+  const [editingTitle, setEditingTitle] = useState('')
 
   const normalizedWord = useMemo(() => targetWord.trim().toUpperCase(), [targetWord])
 
@@ -52,6 +54,30 @@ export default function CreateSharedGameModal({
       await navigator.clipboard.writeText(url)
     } catch {
       // ignore
+    }
+  }
+
+  const startRename = (game: SharedGameSummary) => {
+    setEditingCode(game.shareCode)
+    setEditingTitle(game.title)
+  }
+
+  const saveRename = async (shareCode: string) => {
+    try {
+      const res = await fetch(`/api/shared-games/${shareCode}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ did, title: editingTitle }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to rename')
+
+      setMyGames((prev) =>
+        prev.map((g) => (g.shareCode === shareCode ? { ...g, title: data.title } : g)),
+      )
+      setEditingCode(null)
+    } catch (err) {
+      setMyGamesError(err instanceof Error ? err.message : 'Failed to rename')
     }
   }
 
@@ -93,29 +119,58 @@ export default function CreateSharedGameModal({
               <ul className="my-games-list">
                 {myGames.map((game) => (
                   <li key={game.shareCode} className="my-games-item">
-                    <div className="my-games-info">
-                      <span className="my-games-title">
-                        {game.title || `Code ${game.shareCode.toUpperCase()}`}
-                      </span>
-                      <span className="my-games-date">
-                        {new Date(game.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="my-games-actions">
-                      <button type="button" className="btn-glass btn-sm" onClick={() => copyLink(game.shareUrl)}>
-                        Copy
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-glass btn-sm"
-                        onClick={() => {
-                          onPlay(game.shareCode)
-                          onClose()
-                        }}
-                      >
-                        Play
-                      </button>
-                    </div>
+                    {editingCode === game.shareCode ? (
+                      <>
+                        <input
+                          className="my-games-rename-input"
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveRename(game.shareCode)
+                            if (e.key === 'Escape') setEditingCode(null)
+                          }}
+                          maxLength={80}
+                          autoFocus
+                        />
+                        <div className="my-games-actions">
+                          <button type="button" className="btn-glass btn-sm" onClick={() => saveRename(game.shareCode)}>
+                            Save
+                          </button>
+                          <button type="button" className="btn-glass btn-sm" onClick={() => setEditingCode(null)}>
+                            Cancel
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="my-games-info">
+                          <span className="my-games-title">
+                            {game.title || `Code ${game.shareCode.toUpperCase()}`}
+                          </span>
+                          <span className="my-games-date">
+                            {new Date(game.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="my-games-actions">
+                          <button type="button" className="btn-glass btn-sm" onClick={() => startRename(game)}>
+                            Rename
+                          </button>
+                          <button type="button" className="btn-glass btn-sm" onClick={() => copyLink(game.shareUrl)}>
+                            Copy
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-glass btn-sm"
+                            onClick={() => {
+                              onPlay(game.shareCode)
+                              onClose()
+                            }}
+                          >
+                            Play
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>

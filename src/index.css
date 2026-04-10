@@ -911,6 +911,19 @@ body { font-family: Arial, sans-serif; background: #121213; color: #ffffff; }
   flex-shrink: 0;
 }
 
+.my-games-rename-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid rgba(78, 205, 255, 0.55);
+  background: rgba(9, 14, 23, 0.52);
+  color: #fff;
+  font-size: 0.95rem;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(78, 205, 255, 0.12);
+}
+
 @media (max-width: 480px) {
   .game-title {
     max-width: 8.5rem;
