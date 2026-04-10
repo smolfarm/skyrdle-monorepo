@@ -99,7 +99,18 @@ const App: React.FC = () => {
   useEffect(() => {
     ;(async () => {
       const restoredDid = await initAuth()
-      if (restoredDid) setDid(restoredDid)
+      if (restoredDid) {
+        setDid(restoredDid)
+        // Restore the route the user was on before OAuth redirect
+        const returnPath = sessionStorage.getItem('skyrdle_return_path')
+        if (returnPath) {
+          sessionStorage.removeItem('skyrdle_return_path')
+          const returnRoute = parseAppRoute(returnPath)
+          if (returnRoute.kind !== 'daily') {
+            updateRoute(returnRoute, true)
+          }
+        }
+      }
     })()
   }, [])
 
@@ -370,6 +381,8 @@ const App: React.FC = () => {
       return
     }
     try {
+      // Preserve current path so we can restore it after OAuth redirect
+      sessionStorage.setItem('skyrdle_return_path', window.location.pathname)
       await startLogin(handle)
     } catch (error: any) {
       alert('Login failed: ' + (error.message || JSON.stringify(error)))
@@ -673,11 +686,16 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {showCreateSharedGame && (
+          {showCreateSharedGame && did && (
             <CreateSharedGameModal
+              did={did}
               isSubmitting={isCreatingSharedGame}
               onClose={() => setShowCreateSharedGame(false)}
               onCreate={handleCreateSharedGame}
+              onPlay={(shareCode) => {
+                resetBoardState()
+                updateRoute({ kind: 'shared', shareCode })
+              }}
             />
           )}
         </>

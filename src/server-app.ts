@@ -300,6 +300,24 @@ export function createApp(deps: AppDependencies) {
     }
   })
 
+  app.get('/api/my-shared-games', async (req, res) => {
+    const did = typeof req.query.did === 'string' ? req.query.did : null
+    if (!did) return res.status(400).json({ error: 'Missing did' })
+
+    try {
+      const games = await SharedGame.find({ creatorDid: did }).sort({ createdAt: -1 })
+      res.json(
+        games.map((g) => ({
+          ...buildSharedGameResponse(req, g),
+          createdAt: g.createdAt,
+        })),
+      )
+    } catch (error) {
+      console.error('Error fetching user shared games:', error)
+      res.status(500).json({ error: 'Failed to fetch shared games' })
+    }
+  })
+
   app.get('/api/shared-games/:shareCode', async (req, res) => {
     const shareCode = normalizeSharedGameCode(req.params.shareCode)
     const did = typeof req.query.did === 'string' ? req.query.did : null
