@@ -749,21 +749,14 @@ const App: React.FC = () => {
                   />
                 )}
 
-                {!isInfiniteMode && (
-                  <button
-                    type="button"
-                    className="infinite-mode-link"
-                    onClick={() => updateRoute({ kind: 'infinite' })}
-                  >
-                    Play Infinite Mode &infin;
-                  </button>
-                )}
               </>
             )}
           </div>
 
           <Footer
             onCreateGame={() => setShowCreateSharedGame(true)}
+            onShowInfinite={() => updateRoute({ kind: 'infinite' })}
+            showInfinite={!isInfiniteMode}
             onShowStats={() => setShowStats(true)}
             onShowAbout={() => setShowAbout(true)}
             onShowSettings={() => setShowSettings(true)}

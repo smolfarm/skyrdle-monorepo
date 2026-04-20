@@ -977,18 +977,3 @@ body.colorblind .key-present {
   border-color: rgba(245, 158, 66, 0.9) !important;
   box-shadow: 0 4px 8px rgba(245, 158, 66, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
-
-.infinite-mode-link {
-  margin-top: 1.5rem;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 0.85rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  transition: color 0.2s ease;
-}
-
-.infinite-mode-link:hover {
-  color: rgba(255, 255, 255, 0.7);
-}
