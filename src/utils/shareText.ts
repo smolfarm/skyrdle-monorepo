@@ -25,3 +25,13 @@ export function buildSharedGameShareText(
 
   return `Skyrdle Shared: ${safeTitle} ${score}/6\n\n${grid}\n\nPlay: ${shareUrl}`
 }
+
+export function buildInfiniteShareText(
+  gameGuesses: ServerGuess[],
+  gameStatus: GameStatus,
+) {
+  const score = gameStatus === GameStatus.Won ? gameGuesses.length : 'X'
+  const grid = renderEmojiRows(gameGuesses)
+
+  return `Skyrdle ∞ ${score}/6\n\n${grid}`
+}

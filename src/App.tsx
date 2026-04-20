@@ -22,7 +22,7 @@ import VirtualKeyboard from './components/VirtualKeyboard'
 import { buildAppPath, parseAppRoute, type AppRoute } from './utils/appRoutes'
 import { GameStatus, generateEmojiGrid } from './utils/emojiGrid'
 import { calculateKeyboardStatus } from './utils/keyboardUtils'
-import { buildSharedGameShareText } from './utils/shareText'
+import { buildInfiniteShareText, buildSharedGameShareText } from './utils/shareText'
 
 export { generateEmojiGrid, GameStatus }
 
@@ -75,7 +75,10 @@ const App: React.FC = () => {
   const [sharedGame, setSharedGame] = useState<SharedGameDetails | null>(null)
   const [routeError, setRouteError] = useState<string | null>(null)
 
+  const [infiniteTargetWord, setInfiniteTargetWord] = useState<string | null>(null)
+
   const isSharedMode = route.kind === 'shared'
+  const isInfiniteMode = route.kind === 'infinite'
 
   useEffect(() => {
     if (showStats && did) {
@@ -131,6 +134,7 @@ const App: React.FC = () => {
     setStatus(GameStatus.Playing)
     setExistingScore(undefined)
     setShareText('')
+    setInfiniteTargetWord(null)
   }
 
   const copyToClipboard = async (text: string, successMessage: string) => {
@@ -262,11 +266,62 @@ const App: React.FC = () => {
     }
   }
 
+  const startInfiniteGame = async (userDid: string) => {
+    resetBoardState()
+    try {
+      const res = await fetch('/api/infinite/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ did: userDid }),
+      })
+      const data = await res.json()
+      setGuesses(data.guesses || [])
+      setStatus(GameStatus[data.status as keyof typeof GameStatus])
+      setGameNumber(null)
+      setViewedGameNumber(null)
+      setMaxGameNumber(null)
+      setSharedGame(null)
+      setRouteError(null)
+    } catch (error) {
+      console.error('Error starting infinite game:', error)
+    }
+  }
+
+  const fetchInfiniteGame = async (userDid: string) => {
+    try {
+      const res = await fetch(`/api/infinite/current?did=${encodeURIComponent(userDid)}`)
+      if (res.ok) {
+        const data = await res.json()
+        const newGuesses = (data.guesses || []) as ServerGuess[]
+        setGuesses(newGuesses)
+        setKeyboardStatus(calculateKeyboardStatus(newGuesses))
+        setStatus(GameStatus[data.status as keyof typeof GameStatus])
+        setCurrent([])
+        setGameNumber(null)
+        setViewedGameNumber(null)
+        setMaxGameNumber(null)
+        setSharedGame(null)
+        setRouteError(null)
+        if (data.targetWord) setInfiniteTargetWord(data.targetWord)
+      } else {
+        await startInfiniteGame(userDid)
+      }
+    } catch (error) {
+      console.error('Error fetching infinite game:', error)
+      await startInfiniteGame(userDid)
+    }
+  }
+
   useEffect(() => {
     if (!did) {
       if (route.kind === 'shared') {
         fetchSharedGamePreview(route.shareCode)
       }
+      return
+    }
+
+    if (route.kind === 'infinite') {
+      fetchInfiniteGame(did)
       return
     }
 
@@ -288,6 +343,15 @@ const App: React.FC = () => {
   }, [did, route, viewedGameNumber, sharedGame])
 
   useEffect(() => {
+    if (route.kind === 'infinite') {
+      if (status === GameStatus.Won || status === GameStatus.Lost) {
+        setShareText(buildInfiniteShareText(guesses, status))
+      } else {
+        setShareText('')
+      }
+      return
+    }
+
     if (route.kind === 'daily') {
       if (did && viewedGameNumber !== null && (status === GameStatus.Won || status === GameStatus.Lost)) {
         if (existingScore === null) {
@@ -393,12 +457,19 @@ const App: React.FC = () => {
     if (!did || status !== GameStatus.Playing || current.length !== WORD_LENGTH) return
 
     const guessStr = current.join('')
-    const requestUrl = route.kind === 'shared'
-      ? `/api/shared-games/${route.shareCode}/guess`
-      : '/api/guess'
-    const requestBody = route.kind === 'shared'
-      ? { did, guess: guessStr }
-      : { did, guess: guessStr, gameNumber: viewedGameNumber }
+    let requestUrl: string
+    let requestBody: object
+
+    if (route.kind === 'infinite') {
+      requestUrl = '/api/infinite/guess'
+      requestBody = { did, guess: guessStr }
+    } else if (route.kind === 'shared') {
+      requestUrl = `/api/shared-games/${route.shareCode}/guess`
+      requestBody = { did, guess: guessStr }
+    } else {
+      requestUrl = '/api/guess'
+      requestBody = { did, guess: guessStr, gameNumber: viewedGameNumber }
+    }
 
     fetch(requestUrl, {
       method: 'POST',
@@ -413,7 +484,13 @@ const App: React.FC = () => {
         return data
       })
       .then((data) => {
-        if (route.kind === 'shared') {
+        if (route.kind === 'infinite') {
+          const newGuesses = data.guesses as ServerGuess[]
+          setGuesses(newGuesses)
+          setKeyboardStatus(calculateKeyboardStatus(newGuesses))
+          setStatus(GameStatus[data.status as keyof typeof GameStatus])
+          if (data.targetWord) setInfiniteTargetWord(data.targetWord)
+        } else if (route.kind === 'shared') {
           applySharedGameResponse(data)
         } else {
           const newGuesses = data.guesses as ServerGuess[]
@@ -514,15 +591,19 @@ const App: React.FC = () => {
     )
   }
 
-  const loginContextMessage = isSharedMode
-    ? `Log in to play ${getSharedGameTitle(sharedGame, route)}`
-    : undefined
+  const loginContextMessage = isInfiniteMode
+    ? 'Log in to play Skyrdle Infinite'
+    : isSharedMode
+      ? `Log in to play ${getSharedGameTitle(sharedGame, route)}`
+      : undefined
 
-  const headerTitle = isSharedMode
-    ? getSharedGameTitle(sharedGame, route)
-    : viewedGameNumber !== null || gameNumber !== null
-      ? `Skyrdle #${viewedGameNumber !== null ? viewedGameNumber : gameNumber}`
-      : 'Skyrdle'
+  const headerTitle = isInfiniteMode
+    ? 'Skyrdle \u221E'
+    : isSharedMode
+      ? getSharedGameTitle(sharedGame, route)
+      : viewedGameNumber !== null || gameNumber !== null
+        ? `Skyrdle #${viewedGameNumber !== null ? viewedGameNumber : gameNumber}`
+        : 'Skyrdle'
 
   return (
     <div className="app">
@@ -537,7 +618,22 @@ const App: React.FC = () => {
         <>
           <header className="game-header-fixed">
             <div className="navigation-container">
-              {isSharedMode ? (
+              {isInfiniteMode ? (
+                <>
+                  <button type="button" onClick={() => updateRoute({ kind: 'daily' })} className="btn-glass">
+                    Daily
+                  </button>
+                  <h1 className="game-title">{headerTitle}</h1>
+                  <button
+                    type="button"
+                    onClick={() => did && startInfiniteGame(did)}
+                    className="btn-glass"
+                    disabled={status === GameStatus.Playing}
+                  >
+                    New Word
+                  </button>
+                </>
+              ) : isSharedMode ? (
                 <>
                   <button type="button" onClick={() => updateRoute({ kind: 'daily' })} className="btn-glass">
                     Daily
@@ -626,13 +722,21 @@ const App: React.FC = () => {
 
                 {status === GameStatus.Won && (
                   <div className="message" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
-                    {isSharedMode ? 'Solved. Share the link so someone else can try it.' : 'Congrats! You won! Score saved!'}
+                    {isInfiniteMode
+                      ? 'Nice! Hit New Word to keep going.'
+                      : isSharedMode
+                        ? 'Solved. Share the link so someone else can try it.'
+                        : 'Congrats! You won! Score saved!'}
                   </div>
                 )}
 
                 {status === GameStatus.Lost && (
                   <div className="message" style={{ marginTop: '2rem', marginBottom: '2rem' }}>
-                    {isSharedMode ? 'No luck this time. You can still pass the link along.' : 'Game Over. Score saved.'}
+                    {isInfiniteMode
+                      ? `The word was ${infiniteTargetWord}. Hit New Word to try another.`
+                      : isSharedMode
+                        ? 'No luck this time. You can still pass the link along.'
+                        : 'Game Over. Score saved.'}
                   </div>
                 )}
 
@@ -643,6 +747,16 @@ const App: React.FC = () => {
                     onSkeet={handleSkeetResults}
                     isPostingSkeet={isPostingSkeet}
                   />
+                )}
+
+                {!isInfiniteMode && (
+                  <button
+                    type="button"
+                    className="infinite-mode-link"
+                    onClick={() => updateRoute({ kind: 'infinite' })}
+                  >
+                    Play Infinite Mode &infin;
+                  </button>
                 )}
               </>
             )}

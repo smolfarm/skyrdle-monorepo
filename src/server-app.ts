@@ -268,6 +268,95 @@ export function createApp(deps: AppDependencies) {
     }
   })
 
+  // --- Infinite mode (in-memory, ephemeral) ---
+
+  type InfiniteGameState = {
+    targetWord: string
+    guesses: { letters: string[]; evaluation: string[] }[]
+    status: 'Playing' | 'Won' | 'Lost'
+    createdAt: number
+  }
+
+  const infiniteGames = new Map<string, InfiniteGameState>()
+
+  // Clean up old infinite games every hour
+  setInterval(() => {
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000
+    for (const [key, game] of infiniteGames) {
+      if (game.createdAt < cutoff) infiniteGames.delete(key)
+    }
+  }, 60 * 60 * 1000)
+
+  const validationWordsArray = Array.from(validationWordList)
+
+  app.get('/api/infinite/current', (req, res) => {
+    const did = typeof req.query.did === 'string' ? req.query.did : null
+    if (!did) return res.status(400).json({ error: 'Missing did' })
+
+    const game = infiniteGames.get(did)
+    if (!game) return res.status(404).json({ error: 'No active infinite game' })
+
+    const response: Record<string, unknown> = {
+      guesses: game.guesses,
+      status: game.status,
+    }
+    if (game.status !== 'Playing') {
+      response.targetWord = game.targetWord
+    }
+    res.json(response)
+  })
+
+  app.post('/api/infinite/start', (req, res) => {
+    const { did } = req.body
+    if (!did) return res.status(400).json({ error: 'Missing did' })
+
+    const targetWord = validationWordsArray[Math.floor(Math.random() * validationWordsArray.length)]
+
+    infiniteGames.set(String(did), {
+      targetWord,
+      guesses: [],
+      status: 'Playing',
+      createdAt: Date.now(),
+    })
+
+    res.json({ status: 'Playing', guesses: [] })
+  })
+
+  app.post('/api/infinite/guess', (req, res) => {
+    const { did, guess } = req.body
+    if (!did || !guess) return res.status(400).json({ error: 'Missing did or guess' })
+
+    const normalizedGuess = normalizeGuessWord(guess)
+    if (!validationWordList.has(normalizedGuess)) {
+      return res.status(400).json({ error: 'Invalid word' })
+    }
+
+    const game = infiniteGames.get(String(did))
+    if (!game) return res.status(404).json({ error: 'No active infinite game' })
+    if (game.status !== 'Playing') return res.status(400).json({ error: 'Game is already over' })
+
+    const evals = evaluateGuess(normalizedGuess, game.targetWord)
+    game.guesses.push({ letters: normalizedGuess.split(''), evaluation: evals })
+
+    if (evals.every(e => e === 'correct')) {
+      game.status = 'Won'
+    } else if (game.guesses.length >= 6) {
+      game.status = 'Lost'
+    }
+
+    const response: Record<string, unknown> = {
+      guesses: game.guesses,
+      status: game.status,
+    }
+    if (game.status !== 'Playing') {
+      response.targetWord = game.targetWord
+    }
+
+    res.json(response)
+  })
+
+  // --- Shared games ---
+
   app.post('/api/shared-games', async (req, res) => {
     const { did, targetWord, title } = req.body
 
