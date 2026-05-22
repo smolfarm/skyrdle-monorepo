@@ -16,6 +16,7 @@ const __dirname = path.dirname(__filename)
 
 let wordList: string[] = []
 let validationWordList = new Set<string>()
+let ready = false
 
 const explicitOrigin = process.env.PUBLIC_ORIGIN || process.env.APP_ORIGIN
 function getPublicOrigin(req: import('express').Request) {
@@ -23,67 +24,79 @@ function getPublicOrigin(req: import('express').Request) {
   return `${req.protocol}://${req.get('host')}`
 }
 
-// Load validation word list from words.json
-try {
+function loadValidationWordList() {
   const wordsData = fs.readFileSync(path.join(__dirname, 'src', 'words.json'), 'utf8')
   const wordsFromFile = JSON.parse(wordsData).words
+  if (!Array.isArray(wordsFromFile) || wordsFromFile.length === 0) {
+    throw new Error('words.json does not contain a non-empty words array')
+  }
+
   validationWordList = new Set(wordsFromFile.map((w: string) => w.toUpperCase()))
   console.log(`Loaded ${validationWordList.size} words for validation.`)
-} catch (err) {
-  console.error('Error loading validation word list from words.json:', err)
-  process.exit(1)
 }
 
-const app = createApp({
-  wordList,
-  validationWordList,
-  Game,
-  Word,
-  Player,
-  SharedGame,
-  SharedGamePlay,
-  getPublicOrigin,
-  staticDir: path.join(__dirname, 'dist'),
-})
+async function loadScheduledWordList() {
+  const docs = await Word.find({}).sort({ gameNumber: 1 })
+  const words = docs.map(d => d.word)
+  if (words.length === 0) {
+    throw new Error('No scheduled words found in MongoDB')
+  }
 
-const port = process.env.PORT || 4000
+  wordList.length = 0
+  wordList.push(...words)
+  console.log(`Loaded ${wordList.length} scheduled words`)
+}
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI as string)
-  .then(async () => {
-    console.log('MongoDB connected successfully')
-    try {
-      const docs = await Word.find({}).sort({ gameNumber: 1 })
-      wordList.length = 0
-      wordList.push(...docs.map(d => d.word))
-      console.log(`Loaded ${wordList.length} words`)
-    } catch (err) {
-      console.error('Error loading word list:', err)
-    }
+async function start() {
+  const mongoUri = process.env.MONGODB_URI
+  if (!mongoUri) {
+    throw new Error('MONGODB_URI is required')
+  }
+
+  loadValidationWordList()
+  await mongoose.connect(mongoUri)
+  console.log('MongoDB connected successfully')
+  await loadScheduledWordList()
+
+  const app = createApp({
+    wordList,
+    validationWordList,
+    Game,
+    Word,
+    Player,
+    SharedGame,
+    SharedGamePlay,
+    getPublicOrigin,
+    staticDir: path.join(__dirname, 'dist'),
+    isReady: () => ready && mongoose.connection.readyState === 1 && wordList.length > 0,
   })
-  .catch(err => console.error('MongoDB connection error:', err))
 
-// cron
-const syncMongoToAtproto = syncMongoToAtprotoService.initSync(Game)
-const updateWordStats = updateWordStatsService.initJob(Game, Word)
-const updatePlayerStats = updatePlayerStatsService.initJob(Game, Player)
+  const syncMongoToAtproto = syncMongoToAtprotoService.initSync(Game)
+  const updateWordStats = updateWordStatsService.initJob(Game, Word)
+  const updatePlayerStats = updatePlayerStatsService.initJob(Game, Player)
+  const syncIntervalMs = syncMongoToAtprotoService.SYNC_INTERVAL_MS
 
-// Set up interval for periodic sync
-const SYNC_INTERVAL_MS = syncMongoToAtprotoService.SYNC_INTERVAL_MS
-setInterval(syncMongoToAtproto, SYNC_INTERVAL_MS)
-setInterval(updateWordStats, SYNC_INTERVAL_MS)
-setInterval(updatePlayerStats, SYNC_INTERVAL_MS)
+  setInterval(syncMongoToAtproto, syncIntervalMs)
+  setInterval(updateWordStats, syncIntervalMs)
+  setInterval(updatePlayerStats, syncIntervalMs)
 
-// Run initial sync after server starts
-app.listen(port, () => {
-  console.log(`Skyrdle API listening on http://localhost:${port}`)
+  const port = process.env.PORT || 4000
+  app.listen(port, () => {
+    ready = true
+    console.log(`Skyrdle API listening on http://localhost:${port}`)
 
-  setTimeout(() => {
-    console.log('Running initial MongoDB to AT Protocol sync...')
-    syncMongoToAtproto()
-    console.log('Running initial word stats update...')
-    updateWordStats()
-    console.log('Running initial player stats update...')
-    updatePlayerStats()
-  }, 2000)
+    setTimeout(() => {
+      console.log('Running initial MongoDB to AT Protocol sync...')
+      syncMongoToAtproto()
+      console.log('Running initial word stats update...')
+      updateWordStats()
+      console.log('Running initial player stats update...')
+      updatePlayerStats()
+    }, 2000)
+  })
+}
+
+start().catch(err => {
+  console.error('Failed to start Skyrdle API:', err)
+  process.exit(1)
 })

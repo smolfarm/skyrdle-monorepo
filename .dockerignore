@@ -18,3 +18,10 @@ coverage
 .env
 .env.*
 .eslintcache
+.DS_Store
+
+skyrdle-admin/.next
+skyrdle-admin/node_modules
+skyrdle-native/.expo
+skyrdle-native/build-*.aab
+skyrdle-native/node_modules

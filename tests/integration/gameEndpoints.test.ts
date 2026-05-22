@@ -61,6 +61,7 @@ describe('GET /api/game', () => {
     expect(res.body.guesses).toHaveLength(1)
     expect(res.body.status).toBe('Playing')
     expect(res.body.gameNumber).toBe(currentGameNumber)
+    expect(res.body).not.toHaveProperty('targetWord')
   })
 
   it('creates new game if none exists', async () => {
@@ -143,7 +144,27 @@ describe('GET /api/game/:gameNumber', () => {
     expect(res.status).toBe(200)
     expect(res.body.guesses).toEqual([])
     expect(res.body.status).toBe('Playing')
+    expect(res.body).not.toHaveProperty('targetWord')
     expect(Game).toHaveBeenCalled()
+  })
+
+  it('does not expose the target word for an unfinished specific game', async () => {
+    const currentGame = mockGameDoc({
+      did: 'did:plc:test',
+      targetWord: 'CRANE',
+      guesses: [],
+      status: 'Playing',
+      gameNumber: currentGameNumber,
+    })
+    Game.findOne.mockResolvedValue(currentGame)
+
+    const res = await request(app)
+      .get(`/api/game/${currentGameNumber}`)
+      .query({ did: 'did:plc:test' })
+
+    expect(res.status).toBe(200)
+    expect(res.body.status).toBe('Playing')
+    expect(res.body).not.toHaveProperty('targetWord')
   })
 
   it('returns 400 when did is missing', async () => {

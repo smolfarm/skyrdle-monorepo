@@ -22,7 +22,12 @@ interface AppDependencies {
   SharedGamePlay: Model<SharedGamePlayDocument>
   getPublicOrigin: (req: express.Request) => string
   staticDir?: string
+  isReady?: () => boolean
+  requireVerifiedWrites?: boolean
+  verifyDidRequest?: (req: express.Request, did: string) => boolean | Promise<boolean>
 }
+
+type GameLike = Pick<GameDocument, 'guesses' | 'status' | 'gameNumber' | 'targetWord'>
 
 export function createApp(deps: AppDependencies) {
   const {
@@ -35,12 +40,35 @@ export function createApp(deps: AppDependencies) {
     SharedGamePlay,
     getPublicOrigin,
     staticDir,
+    isReady = () => true,
+    requireVerifiedWrites = process.env.NODE_ENV !== 'test',
+    verifyDidRequest = defaultVerifyDidRequest,
   } = deps
 
   const app = express()
   app.set('trust proxy', true)
-  app.use(cors())
+  const allowedOrigins = (process.env.CORS_ORIGINS || process.env.PUBLIC_ORIGIN || process.env.APP_ORIGIN || '')
+    .split(',')
+    .map(origin => origin.trim().replace(/\/$/, ''))
+    .filter(Boolean)
+
+  app.use(cors({
+    origin(origin, callback) {
+      if (!origin) return callback(null, true)
+      if (allowedOrigins.includes(origin.replace(/\/$/, ''))) return callback(null, true)
+      if (process.env.NODE_ENV !== 'production' && allowedOrigins.length === 0) return callback(null, true)
+      return callback(new Error('Not allowed by CORS'))
+    },
+  }))
   app.use(express.json())
+
+  app.get('/healthz', (_req, res) => {
+    if (!isReady()) {
+      return res.status(503).json({ status: 'not_ready' })
+    }
+
+    res.json({ status: 'ok' })
+  })
 
   app.get('/.well-known/client-metadata.json', (req, res) => {
     const origin = getPublicOrigin(req)
@@ -86,6 +114,53 @@ export function createApp(deps: AppDependencies) {
   // Static files registered after client-metadata, before API routes (matches original order)
   if (staticDir) {
     app.use(express.static(staticDir))
+  }
+
+  async function defaultVerifyDidRequest(req: express.Request, did: string) {
+    if (process.env.SKYRDLE_ALLOW_UNVERIFIED_DID_WRITES === 'true') {
+      return true
+    }
+
+    const bypassToken = process.env.SKYRDLE_AUTH_BYPASS_TOKEN
+    const auth = req.get('authorization') || ''
+    const headerDid = req.get('x-skyrdle-did')
+    if (bypassToken && auth === `Bearer ${bypassToken}` && headerDid === did) {
+      return true
+    }
+
+    return false
+  }
+
+  async function requireVerifiedDid(req: express.Request, res: express.Response, did: unknown) {
+    const normalizedDid = typeof did === 'string' ? did.trim() : ''
+    if (!normalizedDid) {
+      res.status(400).json({ error: 'Missing did' })
+      return null
+    }
+
+    if (requireVerifiedWrites) {
+      const verified = await verifyDidRequest(req, normalizedDid)
+      if (!verified) {
+        res.status(401).json({ error: 'Unauthorized did' })
+        return null
+      }
+    }
+
+    return normalizedDid
+  }
+
+  function buildGameResponse(game: GameLike) {
+    const response: Record<string, unknown> = {
+      guesses: game.guesses,
+      status: game.status,
+      gameNumber: game.gameNumber,
+    }
+
+    if (game.status !== 'Playing') {
+      response.targetWord = game.targetWord
+    }
+
+    return response
   }
 
   async function getGame(did: string) {
@@ -156,11 +231,12 @@ export function createApp(deps: AppDependencies) {
   }
 
   app.get('/api/game', async (req, res) => {
-    const { did } = req.query
-    if (!did) return res.status(400).json({ error: 'Missing did' })
+    const did = await requireVerifiedDid(req, res, req.query.did)
+    if (!did) return
+
     try {
-      const game = await getGame(did as string)
-      res.json({ guesses: game.guesses, status: game.status, gameNumber: game.gameNumber })
+      const game = await getGame(did)
+      res.json(buildGameResponse(game))
     } catch (error) {
       console.error('Error fetching game state:', error)
       res.status(500).json({ error: 'Failed to fetch game state' })
@@ -168,10 +244,10 @@ export function createApp(deps: AppDependencies) {
   })
 
   app.get('/api/game/:gameNumber', async (req, res) => {
-    const { did } = req.query
+    const did = await requireVerifiedDid(req, res, req.query.did)
     const { gameNumber } = req.params
 
-    if (!did) return res.status(400).json({ error: 'Missing did' })
+    if (!did) return
     if (!gameNumber) return res.status(400).json({ error: 'Missing gameNumber' })
 
     try {
@@ -199,7 +275,7 @@ export function createApp(deps: AppDependencies) {
         })
         await game.save()
       }
-      res.json({ guesses: game.guesses, status: game.status, gameNumber: game.gameNumber, targetWord: game.targetWord })
+      res.json(buildGameResponse(game))
     } catch (error) {
       console.error('Error fetching or creating specific game state:', error)
       res.status(500).json({ error: 'Failed to fetch or create specific game state' })
@@ -207,8 +283,11 @@ export function createApp(deps: AppDependencies) {
   })
 
   app.post('/api/guess', async (req, res) => {
-    const { did, guess, gameNumber } = req.body
-    if (!did || !guess || gameNumber === undefined) return res.status(400).json({ error: 'Missing did, guess, or gameNumber' })
+    const { guess, gameNumber } = req.body
+    if (!req.body.did || !guess || gameNumber === undefined) return res.status(400).json({ error: 'Missing did, guess, or gameNumber' })
+
+    const did = await requireVerifiedDid(req, res, req.body.did)
+    if (!did) return
 
     if (!validationWordList.has(guess.toUpperCase())) {
       return res.status(400).json({ error: 'Invalid word' })
@@ -261,7 +340,7 @@ export function createApp(deps: AppDependencies) {
         await game.save()
       }
 
-      res.json({ guesses: game.guesses, status: game.status, gameNumber: game.gameNumber })
+      res.json(buildGameResponse(game))
     } catch (error) {
       console.error('Error processing guess:', error)
       res.status(500).json({ error: 'Failed to process guess' })
@@ -289,9 +368,9 @@ export function createApp(deps: AppDependencies) {
 
   const validationWordsArray = Array.from(validationWordList)
 
-  app.get('/api/infinite/current', (req, res) => {
-    const did = typeof req.query.did === 'string' ? req.query.did : null
-    if (!did) return res.status(400).json({ error: 'Missing did' })
+  app.get('/api/infinite/current', async (req, res) => {
+    const did = await requireVerifiedDid(req, res, req.query.did)
+    if (!did) return
 
     const game = infiniteGames.get(did)
     if (!game) return res.status(404).json({ error: 'No active infinite game' })
@@ -306,13 +385,13 @@ export function createApp(deps: AppDependencies) {
     res.json(response)
   })
 
-  app.post('/api/infinite/start', (req, res) => {
-    const { did } = req.body
-    if (!did) return res.status(400).json({ error: 'Missing did' })
+  app.post('/api/infinite/start', async (req, res) => {
+    const did = await requireVerifiedDid(req, res, req.body.did)
+    if (!did) return
 
     const targetWord = validationWordsArray[Math.floor(Math.random() * validationWordsArray.length)]
 
-    infiniteGames.set(String(did), {
+    infiniteGames.set(did, {
       targetWord,
       guesses: [],
       status: 'Playing',
@@ -322,16 +401,18 @@ export function createApp(deps: AppDependencies) {
     res.json({ status: 'Playing', guesses: [] })
   })
 
-  app.post('/api/infinite/guess', (req, res) => {
-    const { did, guess } = req.body
-    if (!did || !guess) return res.status(400).json({ error: 'Missing did or guess' })
+  app.post('/api/infinite/guess', async (req, res) => {
+    const { guess } = req.body
+    if (!req.body.did || !guess) return res.status(400).json({ error: 'Missing did or guess' })
+    const did = await requireVerifiedDid(req, res, req.body.did)
+    if (!did) return
 
     const normalizedGuess = normalizeGuessWord(guess)
     if (!validationWordList.has(normalizedGuess)) {
       return res.status(400).json({ error: 'Invalid word' })
     }
 
-    const game = infiniteGames.get(String(did))
+    const game = infiniteGames.get(did)
     if (!game) return res.status(404).json({ error: 'No active infinite game' })
     if (game.status !== 'Playing') return res.status(400).json({ error: 'Game is already over' })
 
@@ -358,11 +439,14 @@ export function createApp(deps: AppDependencies) {
   // --- Shared games ---
 
   app.post('/api/shared-games', async (req, res) => {
-    const { did, targetWord, title } = req.body
+    const { targetWord, title } = req.body
 
-    if (!did || !targetWord) {
+    if (!req.body.did || !targetWord) {
       return res.status(400).json({ error: 'Missing did or targetWord' })
     }
+
+    const did = await requireVerifiedDid(req, res, req.body.did)
+    if (!did) return
 
     const normalizedWord = normalizeGuessWord(targetWord)
     if (normalizedWord.length !== 5 || !validationWordList.has(normalizedWord)) {
@@ -373,7 +457,7 @@ export function createApp(deps: AppDependencies) {
       const shareCode = await generateShareCode()
       const createdGame = new SharedGame({
         shareCode,
-        creatorDid: String(did),
+        creatorDid: did,
         targetWord: normalizedWord,
         title: normalizeSharedGameTitle(title),
       })
@@ -390,8 +474,8 @@ export function createApp(deps: AppDependencies) {
   })
 
   app.get('/api/my-shared-games', async (req, res) => {
-    const did = typeof req.query.did === 'string' ? req.query.did : null
-    if (!did) return res.status(400).json({ error: 'Missing did' })
+    const did = await requireVerifiedDid(req, res, req.query.did)
+    if (!did) return
 
     try {
       const games = await SharedGame.find({ creatorDid: did }).sort({ createdAt: -1 })
@@ -409,15 +493,16 @@ export function createApp(deps: AppDependencies) {
 
   app.patch('/api/shared-games/:shareCode', async (req, res) => {
     const shareCode = normalizeSharedGameCode(req.params.shareCode)
-    const { did, title } = req.body
+    const { title } = req.body
 
-    if (!did) return res.status(400).json({ error: 'Missing did' })
     if (typeof title !== 'string') return res.status(400).json({ error: 'Missing title' })
+    const did = await requireVerifiedDid(req, res, req.body.did)
+    if (!did) return
 
     try {
       const sharedGame = await SharedGame.findOne({ shareCode })
       if (!sharedGame) return res.status(404).json({ error: 'Shared game not found' })
-      if (sharedGame.creatorDid !== String(did)) return res.status(403).json({ error: 'Not the creator of this game' })
+      if (sharedGame.creatorDid !== did) return res.status(403).json({ error: 'Not the creator of this game' })
 
       sharedGame.title = normalizeSharedGameTitle(title)
       await sharedGame.save()
@@ -431,7 +516,6 @@ export function createApp(deps: AppDependencies) {
 
   app.get('/api/shared-games/:shareCode', async (req, res) => {
     const shareCode = normalizeSharedGameCode(req.params.shareCode)
-    const did = typeof req.query.did === 'string' ? req.query.did : null
 
     if (!shareCode) {
       return res.status(400).json({ error: 'Missing shareCode' })
@@ -445,10 +529,12 @@ export function createApp(deps: AppDependencies) {
 
       const baseResponse = buildSharedGameResponse(req, sharedGame)
 
-      if (!did) {
+      if (!req.query.did) {
         return res.json(baseResponse)
       }
 
+      const did = await requireVerifiedDid(req, res, req.query.did)
+      if (!did) return
       const play = await getOrCreateSharedGamePlay(did, shareCode)
 
       res.json({
@@ -463,12 +549,15 @@ export function createApp(deps: AppDependencies) {
   })
 
   app.post('/api/shared-games/:shareCode/guess', async (req, res) => {
-    const { did, guess } = req.body
+    const { guess } = req.body
     const shareCode = normalizeSharedGameCode(req.params.shareCode)
 
-    if (!did || !guess) {
+    if (!req.body.did || !guess) {
       return res.status(400).json({ error: 'Missing did or guess' })
     }
+
+    const did = await requireVerifiedDid(req, res, req.body.did)
+    if (!did) return
 
     const normalizedGuess = normalizeGuessWord(guess)
     if (!validationWordList.has(normalizedGuess)) {
@@ -481,7 +570,7 @@ export function createApp(deps: AppDependencies) {
         return res.status(404).json({ error: 'Shared game not found' })
       }
 
-      const play = await getOrCreateSharedGamePlay(String(did), shareCode)
+      const play = await getOrCreateSharedGamePlay(did, shareCode)
 
       if (play.status !== 'Playing') {
         return res.status(400).json({ error: 'Game is already over (Won or Lost)' })

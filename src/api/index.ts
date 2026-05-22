@@ -61,7 +61,8 @@ export default function api(app: Express, Game: Model<GameDocument>, Word: Model
      */
     app.get('/api/game/:gameNumber/stats', async (req: Request, res: Response) => {
       const { gameNumber } = req.params
-      if (!gameNumber) return res.status(400).json({ error: 'Missing gameNumber' })
+      if (!gameNumber || isNaN(Number(gameNumber))) return res.status(400).json({ error: 'Missing or invalid gameNumber' })
+
       try {
         const game = await Word.findOne({ gameNumber })
         if (!game) return res.status(404).json({ error: 'Word not found' })
