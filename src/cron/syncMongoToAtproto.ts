@@ -1,6 +1,6 @@
 import { AtpAgent } from '@atproto/api'
 import crypto from 'crypto'
-import type { GameDocument, GameModel, Guess } from '../models/Game'
+import type { GameDocument, GameModel } from '../models/Game'
 
 const PLAYER_SCORE_COLLECTION = 'farm.smol.games.skyrdle.player.score'
 const SYNC_INTERVAL_MS = 3600000
@@ -50,7 +50,7 @@ function scoreHash(did: string, gameNumber: number, score: number) {
   return crypto.createHash('sha256').update(`${did}|${gameNumber}|${score}`).digest('hex')
 }
 
-async function saveScoreToAtproto(did: string, gameNumber: number, score: number, guesses: Guess[]): Promise<boolean> {
+async function saveScoreToAtproto(did: string, gameNumber: number, score: number): Promise<boolean> {
   try {
     const recordHash = scoreHash(did, gameNumber, score)
 
@@ -72,7 +72,6 @@ async function saveScoreToAtproto(did: string, gameNumber: number, score: number
         playerDid: did,
         gameNumber,
         score,
-        guesses,
         hash: recordHash,
       },
     })
@@ -84,7 +83,7 @@ async function saveScoreToAtproto(did: string, gameNumber: number, score: number
       console.log('Authentication error, re-authenticating...')
       const authenticated = await authenticateWithAtproto()
       if (authenticated) {
-        return saveScoreToAtproto(did, gameNumber, score, guesses)
+        return saveScoreToAtproto(did, gameNumber, score)
       }
     }
 
@@ -143,7 +142,7 @@ async function syncMongoToAtproto(Game: GameModel) {
 
     for (const game of gamesToSync) {
       const score = scoreForGame(game)
-      const syncSuccess = await saveScoreToAtproto(game.did, game.gameNumber, score, game.guesses)
+      const syncSuccess = await saveScoreToAtproto(game.did, game.gameNumber, score)
 
       if (syncSuccess) {
         game.syncedToAtproto = true

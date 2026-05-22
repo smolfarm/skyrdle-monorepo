@@ -41,25 +41,13 @@ export function createApp(deps: AppDependencies) {
     getPublicOrigin,
     staticDir,
     isReady = () => true,
-    requireVerifiedWrites = process.env.NODE_ENV !== 'test',
+    requireVerifiedWrites = process.env.SKYRDLE_REQUIRE_VERIFIED_DID_WRITES === 'true',
     verifyDidRequest = defaultVerifyDidRequest,
   } = deps
 
   const app = express()
   app.set('trust proxy', true)
-  const allowedOrigins = (process.env.CORS_ORIGINS || process.env.PUBLIC_ORIGIN || process.env.APP_ORIGIN || '')
-    .split(',')
-    .map(origin => origin.trim().replace(/\/$/, ''))
-    .filter(Boolean)
-
-  app.use(cors({
-    origin(origin, callback) {
-      if (!origin) return callback(null, true)
-      if (allowedOrigins.includes(origin.replace(/\/$/, ''))) return callback(null, true)
-      if (process.env.NODE_ENV !== 'production' && allowedOrigins.length === 0) return callback(null, true)
-      return callback(new Error('Not allowed by CORS'))
-    },
-  }))
+  app.use(cors())
   app.use(express.json())
 
   app.get('/healthz', (_req, res) => {
